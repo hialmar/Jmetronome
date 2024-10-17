@@ -48,6 +48,8 @@ public class ReadOldExcelFile {
         return sheet.getRow(mergedCells.getFirstRow()).getCell(mergedCells.getFirstColumn()).getStringCellValue();
     }
 
+
+
     public static void main(String[] args) throws IOException {
         FileInputStream fis = new FileInputStream("2024-2025 Master.xlsx");
         XSSFWorkbook workbook = new XSSFWorkbook(fis);
@@ -56,23 +58,13 @@ public class ReadOldExcelFile {
         var cell = spreadsheet.getRow(6).getCell(0);
 
         System.out.println(cell.getCellType() + " " + cell.getDateCellValue());
-        if (getCellRangeIfCellIsInMergedCells(spreadsheet, cell.getRowIndex(), cell.getColumnIndex())!=null)
-            System.out.println("Merged");
-        else
-            System.out.println("Not Merged");
+        printInfos(cell, spreadsheet);
 
-        cell = spreadsheet.getRow(6).getCell(1);
 
-        System.out.println(cell.getCellType() + " " + cell.getStringCellValue() + " " +
-                cell.getCellStyle().getBorderTop() + " " +
-                cell.getCellStyle().getBorderBottom() + " " +
-                cell.getCellStyle().getBorderLeft() + " " +
-                cell.getCellStyle().getBorderRight() + " ");
+        recupJour(spreadsheet, 6);
 
-        if (getCellRangeIfCellIsInMergedCells(spreadsheet, cell.getRowIndex(), cell.getColumnIndex())!=null)
-            System.out.println("Merged");
-        else
-            System.out.println("Not Merged");
+        recupJour(spreadsheet, 8);
+
         /*
         Iterator<Row> rowIterator = spreadsheet.iterator();
 
@@ -100,5 +92,63 @@ public class ReadOldExcelFile {
             System.out.println();
         }*/
         fis.close();
+    }
+
+    private static void recupJour(XSSFSheet spreadsheet, int startRow) {
+        System.out.println("recupJour");
+        var cell = spreadsheet.getRow(startRow).getCell(1);
+
+        printInfos(cell, spreadsheet);
+
+        // Créneau 7h45
+        recupInfosCours(spreadsheet, startRow, 2);
+
+        // Créneau 10h
+        recupInfosCours(spreadsheet, startRow, 11);
+
+        // Créneau 13h30
+        recupInfosCours(spreadsheet, startRow, 25);
+
+        // Créneau 13h30
+        recupInfosCours(spreadsheet, startRow, 34);
+    }
+
+    private static void recupInfosCours(XSSFSheet spreadsheet, int startRow, int startColumn) {
+        System.out.println("recupInfosCours");
+        XSSFCell cell;
+        cell = spreadsheet.getRow(startRow).getCell(startColumn);
+
+        printInfos(cell, spreadsheet);
+
+        cell = spreadsheet.getRow(startRow+1).getCell(startColumn);
+
+        printInfos(cell, spreadsheet);
+
+        cell = spreadsheet.getRow(startRow+1).getCell(startColumn+6);
+
+        printInfos(cell, spreadsheet);
+    }
+
+    private static void printInfos(XSSFCell cell, XSSFSheet spreadsheet) {
+        switch (cell.getCellType()) {
+            case NUMERIC:
+                System.out.print(cell.getNumericCellValue() + " \t\t ");
+                break;
+
+            case STRING:
+                System.out.print(
+                        cell.getStringCellValue() + " \t\t ");
+                break;
+        }
+        System.out.println(cell.getCellType() + " " +
+                cell.getCellStyle().getBorderTop() + " " +
+                cell.getCellStyle().getBorderBottom() + " " +
+                cell.getCellStyle().getBorderLeft() + " " +
+                cell.getCellStyle().getBorderRight() + " ");
+
+        if (getCellRangeIfCellIsInMergedCells(spreadsheet, cell.getRowIndex(), cell.getColumnIndex())!=null)
+            System.out.println("Merged");
+        else
+            System.out.println("Not Merged");
     }
 }

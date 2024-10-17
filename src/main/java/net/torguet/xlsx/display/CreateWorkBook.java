@@ -1,4 +1,4 @@
-package org.example;
+package net.torguet.xlsx.display;
 
 import java.io.*;
 import org.apache.poi.xssf.usermodel.*;
@@ -9,7 +9,7 @@ public class CreateWorkBook {
         XSSFWorkbook workbook = new XSSFWorkbook();
 
         //Create file system using specific name
-        FileOutputStream out = new FileOutputStream(new File("createworkbook.xlsx"));
+        FileOutputStream out = new FileOutputStream("createworkbook.xlsx");
 
         //write operation workbook using file out object
         workbook.write(out);

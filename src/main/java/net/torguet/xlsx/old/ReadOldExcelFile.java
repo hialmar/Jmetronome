@@ -1,7 +1,6 @@
-package org.example;
+package net.torguet.xlsx.old;
 
 import java.io.*;
-import java.util.Iterator;
 
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
@@ -50,7 +49,7 @@ public class ReadOldExcelFile {
     }
 
     public static void main(String[] args) throws IOException {
-        FileInputStream fis = new FileInputStream(new File("2024-2025 Master.xlsx"));
+        FileInputStream fis = new FileInputStream("2024-2025 Master.xlsx");
         XSSFWorkbook workbook = new XSSFWorkbook(fis);
         XSSFSheet spreadsheet = workbook.getSheetAt(1);
 

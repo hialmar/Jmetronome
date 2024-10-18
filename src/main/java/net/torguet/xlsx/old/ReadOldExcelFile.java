@@ -140,6 +140,7 @@ public class ReadOldExcelFile {
                         cell.getStringCellValue() + " \t\t ");
                 break;
         }
+        /*
         System.out.println(cell.getCellType() + " " +
                 cell.getCellStyle().getBorderTop() + " " +
                 cell.getCellStyle().getBorderBottom() + " " +
@@ -150,5 +151,7 @@ public class ReadOldExcelFile {
             System.out.println("Merged");
         else
             System.out.println("Not Merged");
+
+         */
     }
 }

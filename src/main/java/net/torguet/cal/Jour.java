@@ -1,17 +1,18 @@
 package net.torguet.cal;
 
 import java.util.ArrayList;
+import java.util.Date;
 
 public class Jour {
-    private int jour;
+    private Date date;
     private ArrayList<Cours> cours;
 
-    public Jour(int jour) {
-        this.jour = jour;
+    public Jour(Date date) {
+        this.date = date;
         this.cours = new ArrayList<>();
     }
-    public int getJour() {
-        return jour;
+    public Date getDate() {
+        return date;
     }
 
     public ArrayList<Cours> getCours() {

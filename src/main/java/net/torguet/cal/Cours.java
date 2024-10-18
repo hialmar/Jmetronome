@@ -4,15 +4,17 @@ import java.time.ZonedDateTime;
 
 public class Cours {
     private String intitule;
-    private int type;
+    private String enseignant;
+    private TypeCours type;
     private ZonedDateTime debut;
     private float duree;
-
-    public Cours(String intitule, int type, ZonedDateTime debut, float duree) {
+    private boolean enParallele;
+    public Cours(String intitule) {
         this.intitule = intitule;
-        this.type = type;
-        this.debut = debut;
-        this.duree = duree;
+        this.type = TypeCours.TYPE_AUTRE;
+        this.debut = null;
+        this.duree = 0;
+        this.enParallele = false;
     }
 
     public String getIntitule() {
@@ -23,11 +25,11 @@ public class Cours {
         this.intitule = intitule;
     }
 
-    public int getType() {
+    public TypeCours getType() {
         return type;
     }
 
-    public void setType(int type) {
+    public void setType(TypeCours type) {
         this.type = type;
     }
 
@@ -45,5 +47,33 @@ public class Cours {
 
     public void setDuree(float duree) {
         this.duree = duree;
+    }
+
+    public boolean isEnParallele() {
+        return enParallele;
+    }
+
+    public void setEnParallele(boolean enParallele) {
+        this.enParallele = enParallele;
+    }
+
+    public String getEnseignant() {
+        return enseignant;
+    }
+
+    public void setEnseignant(String enseignant) {
+        this.enseignant = enseignant;
+    }
+
+    @Override
+    public String toString() {
+        return "Cours{" +
+                "intitule='" + intitule + '\'' +
+                ", enseignant='" + enseignant + '\'' +
+                ", type=" + type +
+                ", debut=" + debut +
+                ", duree=" + duree +
+                ", enParallele=" + enParallele +
+                '}';
     }
 }

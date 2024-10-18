@@ -67,13 +67,7 @@ public class Cours {
 
     @Override
     public String toString() {
-        return "Cours{" +
-                "intitule='" + intitule + '\'' +
-                ", enseignant='" + enseignant + '\'' +
-                ", type=" + type +
-                ", debut=" + debut +
-                ", duree=" + duree +
-                ", enParallele=" + enParallele +
-                '}';
+        return  intitule +
+                ", enseignant='" + enseignant + '\'';
     }
 }

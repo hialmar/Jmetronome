@@ -38,6 +38,8 @@ public class ICSGenerator {
                     ZonedDateTime end = start.plusHours((long)cours.getDuree());
                     System.out.println(end);
 
+                    String resume = cours.toString();
+
                     VEvent week1UserA = new VEvent(start, end, cours.getIntitule());
                     week1UserA.getRequiredProperty(Property.DTSTART).add(tzParam).add(Value.DATE);
                     week1UserA.getRequiredProperty(Property.DTEND).add(tzParam).add(Value.DATE);

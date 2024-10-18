@@ -120,10 +120,25 @@ public class OldReader {
             jour = new Jour(date);
 
             // recup cours
+            boolean parallele = false;
             for(int colCours : debutsCours) {
                 Cours cours = recupCours(colCours);
                 if (cours != null) {
+                    if (cours.isEnParallele())
+                        parallele = true;
                     jour.addCours(cours);
+                }
+            }
+
+            if (parallele) {
+                row = sheet.getRow(row.getRowNum()+1);
+
+                for(int colCours : debutsCours) {
+                    Cours cours = recupCours(colCours);
+                    if (cours != null) {
+                        if (cours.isEnParallele())
+                            jour.addCours(cours);
+                    }
                 }
             }
         }
@@ -152,76 +167,122 @@ public class OldReader {
 
             cours.setDebut(d);
 
-            if (intitule.contains(" C"))
-                cours.setType(TypeCours.TYPE_COURS);
-            else if (intitule.contains(" TD"))
-                cours.setType(TypeCours.TYPE_TD);
-            else if (intitule.contains(" TP"))
-                cours.setType(TypeCours.TYPE_TP);
-            else if (intitule.contains(" BE"))
-                cours.setType(TypeCours.TYPE_BE);
-            else if (intitule.contains(" Projet"))
-                cours.setType(TypeCours.TYPE_PROJET);
-
-            // Contrôle
-            if (cellIntitule.getCellStyle() != null &&
-            cellIntitule.getCellStyle().getFillBackgroundColor() != 64) {
-                System.out.println("Couleur de " + intitule + " : " + cellIntitule.getCellStyle().getFillBackgroundColor());
-                cours.setType(TypeCours.TYPE_CONTROLE);
-            }
-            // enseignant
-            Row nextRow = sheet.getRow(row.getRowNum()+1);
-            var cellEnseignant = nextRow.getCell(colCours);
-
-            // est-ce que c'est un créneau en //
-            if ((cellIntitule.getCellStyle() != null &&
-                    cellIntitule.getCellStyle().getBorderBottom() != null &&
-                    cellIntitule.getCellStyle().getBorderBottom() != BorderStyle.NONE) ||
-                    (cellEnseignant.getCellStyle() != null &&
-                            cellEnseignant.getCellStyle().getBorderTop() != null &&
-                            cellEnseignant.getCellStyle().getBorderTop() != BorderStyle.NONE))
-            {
-                cours.setEnParallele(true);
-
-                // tout est dans l'intitulé
-                int debutEnseignant = intitule.indexOf('(');
-                if (debutEnseignant != -1) {
-                    int finEnseignant = intitule.indexOf(')', debutEnseignant);
-                    if (finEnseignant == -1) {
-                        finEnseignant = intitule.length();
-                    }
-
-                    String enseignant = intitule.substring(debutEnseignant+1, finEnseignant);
-                    cours.setEnseignant(enseignant);
-                }
-            } else {
-                // l'enseignant est à part
-                if (cellEnseignant.getCellType() == STRING)
-                    cours.setEnseignant(cellEnseignant.getStringCellValue());
-
-                var cellSalle = nextRow.getCell(colCours+6);
-                if (cellSalle != null && cellSalle.getCellType() == STRING) {
-                    // créneau de 2h
-                    cours.setDuree(2);
-                } else {
-                    cellSalle = nextRow.getCell(colCours+4);
-                    if (cellSalle != null && cellSalle.getCellType() == STRING) {
-                        // créneau de 1h
-                        cours.setDuree(1);
-                    } else {
-                        cellSalle = nextRow.getCell(colCours+10);
-                        if (cellSalle != null && cellSalle.getCellType() == STRING) {
-                            // créneau de 3h
-                            cours.setDuree(3);
-                        }
-                    }
-                }
-            }
+            gestionTypeCours(intitule, cours, cellIntitule);
+            gestionEnseignantEtSalle(colCours, cellIntitule, cours, intitule);
         }
 
         System.out.println(cours);
 
         return cours;
+    }
+
+    private void gestionEnseignantEtSalle(int colCours, Cell cellIntitule, Cours cours, String intitule) {
+        // enseignant
+        Row nextRow = sheet.getRow(row.getRowNum()+1);
+        var cellEnseignant = nextRow.getCell(colCours);
+
+        // est-ce que c'est un créneau en //
+        if ((cellIntitule.getCellStyle() != null &&
+                cellIntitule.getCellStyle().getBorderBottom() != null &&
+                cellIntitule.getCellStyle().getBorderBottom() != BorderStyle.NONE) ||
+                (cellEnseignant.getCellStyle() != null &&
+                        cellEnseignant.getCellStyle().getBorderTop() != null &&
+                        cellEnseignant.getCellStyle().getBorderTop() != BorderStyle.NONE))
+        {
+            cours.setEnParallele(true);
+
+            gestionEnsSalleParallele(colCours, cours, intitule);
+        } else {
+            gestionEnsSalleFull(colCours, cours, cellEnseignant, nextRow);
+        }
+    }
+
+    private static void gestionEnsSalleFull(int colCours, Cours cours, Cell cellEnseignant, Row nextRow) {
+        // l'enseignant est à part
+        if (cellEnseignant.getCellType() == STRING)
+            cours.setEnseignant(cellEnseignant.getStringCellValue());
+
+        var cellSalle = nextRow.getCell(colCours +6);
+        if (cellSalle != null && cellSalle.getCellType() == STRING) {
+            // créneau de 2h
+            cours.setDuree(2);
+        } else {
+            cellSalle = nextRow.getCell(colCours +4);
+            if (cellSalle != null && cellSalle.getCellType() == STRING) {
+                // créneau de 1h
+                cours.setDuree(1);
+            } else {
+                cellSalle = nextRow.getCell(colCours +10);
+                if (cellSalle != null && cellSalle.getCellType() == STRING) {
+                    // créneau de 3h
+                    cours.setDuree(3);
+                } else {
+                    cellSalle = nextRow.getCell(colCours +14);
+                    if (cellSalle != null && cellSalle.getCellType() == STRING) {
+                        // créneau de 4h
+                        cours.setDuree(4);
+                    }
+                }
+            }
+        }
+    }
+
+    private void gestionEnsSalleParallele(int colCours, Cours cours, String intitule) {
+        // tout est dans l'intitulé
+        int debutEnseignant = intitule.indexOf('(');
+        if (debutEnseignant != -1) {
+            int finEnseignant = intitule.indexOf(')', debutEnseignant);
+            if (finEnseignant == -1) {
+                finEnseignant = intitule.length();
+            }
+
+            String enseignant = intitule.substring(debutEnseignant+1, finEnseignant);
+            cours.setEnseignant(enseignant);
+
+            var cellSalle = row.getCell(colCours +6);
+            if (cellSalle != null && cellSalle.getCellType() == STRING) {
+                // créneau de 2h
+                cours.setDuree(2);
+            } else {
+                cellSalle = row.getCell(colCours +4);
+                if (cellSalle != null && cellSalle.getCellType() == STRING) {
+                    // créneau de 1h
+                    cours.setDuree(1);
+                } else {
+                    cellSalle = row.getCell(colCours +10);
+                    if (cellSalle != null && cellSalle.getCellType() == STRING) {
+                        // créneau de 3h
+                        cours.setDuree(3);
+                    } else {
+                        cellSalle = row.getCell(colCours +14);
+                        if (cellSalle != null && cellSalle.getCellType() == STRING) {
+                            // créneau de 4h
+                            cours.setDuree(4);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static void gestionTypeCours(String intitule, Cours cours, Cell cellIntitule) {
+        if (intitule.contains(" C"))
+            cours.setType(TypeCours.TYPE_COURS);
+        else if (intitule.contains(" TD"))
+            cours.setType(TypeCours.TYPE_TD);
+        else if (intitule.contains(" TP"))
+            cours.setType(TypeCours.TYPE_TP);
+        else if (intitule.contains(" BE"))
+            cours.setType(TypeCours.TYPE_BE);
+        else if (intitule.contains(" Projet"))
+            cours.setType(TypeCours.TYPE_PROJET);
+
+        // Contrôle
+        if (cellIntitule.getCellStyle() != null &&
+        cellIntitule.getCellStyle().getFillBackgroundColor() != 64) {
+            System.out.println("Couleur de " + intitule + " : " + cellIntitule.getCellStyle().getFillBackgroundColor());
+            cours.setType(TypeCours.TYPE_CONTROLE);
+        }
     }
 
     private Date searchStartDate(Iterator<Row> rowIterator) {

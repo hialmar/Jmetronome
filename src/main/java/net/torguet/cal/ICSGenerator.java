@@ -40,7 +40,7 @@ public class ICSGenerator {
 
                     String resume = cours.toString();
 
-                    VEvent week1UserA = new VEvent(start, end, cours.getIntitule());
+                    VEvent week1UserA = new VEvent(start, end, resume);
                     week1UserA.getRequiredProperty(Property.DTSTART).add(tzParam).add(Value.DATE);
                     week1UserA.getRequiredProperty(Property.DTEND).add(tzParam).add(Value.DATE);
 

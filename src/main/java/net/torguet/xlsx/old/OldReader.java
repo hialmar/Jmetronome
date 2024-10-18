@@ -206,21 +206,25 @@ public class OldReader {
         if (cellSalle != null && cellSalle.getCellType() == STRING) {
             // créneau de 2h
             cours.setDuree(2);
+            cours.setSalle(cellSalle.getStringCellValue());
         } else {
             cellSalle = nextRow.getCell(colCours +4);
             if (cellSalle != null && cellSalle.getCellType() == STRING) {
                 // créneau de 1h
                 cours.setDuree(1);
+                cours.setSalle(cellSalle.getStringCellValue());
             } else {
                 cellSalle = nextRow.getCell(colCours +10);
                 if (cellSalle != null && cellSalle.getCellType() == STRING) {
                     // créneau de 3h
                     cours.setDuree(3);
+                    cours.setSalle(cellSalle.getStringCellValue());
                 } else {
                     cellSalle = nextRow.getCell(colCours +14);
                     if (cellSalle != null && cellSalle.getCellType() == STRING) {
                         // créneau de 4h
                         cours.setDuree(4);
+                        cours.setSalle(cellSalle.getStringCellValue());
                     }
                 }
             }
@@ -243,21 +247,25 @@ public class OldReader {
             if (cellSalle != null && cellSalle.getCellType() == STRING) {
                 // créneau de 2h
                 cours.setDuree(2);
+                cours.setSalle(cellSalle.getStringCellValue());
             } else {
                 cellSalle = row.getCell(colCours +4);
                 if (cellSalle != null && cellSalle.getCellType() == STRING) {
                     // créneau de 1h
                     cours.setDuree(1);
+                    cours.setSalle(cellSalle.getStringCellValue());
                 } else {
                     cellSalle = row.getCell(colCours +10);
                     if (cellSalle != null && cellSalle.getCellType() == STRING) {
                         // créneau de 3h
                         cours.setDuree(3);
+                        cours.setSalle(cellSalle.getStringCellValue());
                     } else {
                         cellSalle = row.getCell(colCours +14);
                         if (cellSalle != null && cellSalle.getCellType() == STRING) {
                             // créneau de 4h
                             cours.setDuree(4);
+                            cours.setSalle(cellSalle.getStringCellValue());
                         }
                     }
                 }

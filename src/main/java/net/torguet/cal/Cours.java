@@ -9,6 +9,8 @@ public class Cours {
     private ZonedDateTime debut;
     private float duree;
     private boolean enParallele;
+    private String salle;
+
     public Cours(String intitule) {
         this.intitule = intitule;
         this.type = TypeCours.TYPE_AUTRE;
@@ -65,9 +67,18 @@ public class Cours {
         this.enseignant = enseignant;
     }
 
+    public String getSalle() {
+        return salle;
+    }
+
+    public void setSalle(String salle) {
+        this.salle = salle;
+    }
+
     @Override
     public String toString() {
         return  intitule +
-                ", enseignant='" + enseignant + '\'';
+                ", enseignant : " + enseignant +
+                ", salle : " + salle;
     }
 }

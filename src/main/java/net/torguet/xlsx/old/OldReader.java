@@ -17,10 +17,10 @@ import java.util.Iterator;
 import static org.apache.poi.ss.usermodel.CellType.*;
 
 public class OldReader {
-    private Calendrier calendar;
+    private final Calendrier calendar;
 
-    private FileInputStream fis;
-    private XSSFSheet sheet;
+    private final FileInputStream fis;
+    private final XSSFSheet sheet;
 
     private Row row;
     private Date date;
@@ -36,7 +36,7 @@ public class OldReader {
         fis.close();
     }
 
-    public Calendrier traiterFichier() throws IOException {
+    public Calendrier traiterFichier() {
         Iterator<Row> rowIterator = sheet.iterator();
         date = searchStartDate(rowIterator);
         if (date != null) {
@@ -65,7 +65,7 @@ public class OldReader {
             cell = sheet.getRow(row.getRowNum()-1).getCell(1);
         }
 
-        if(cell != null && (cell.getCellType() == NUMERIC || cell.getCellType() == FORMULA)) {
+        if(cell.getCellType() == NUMERIC || cell.getCellType() == FORMULA) {
             semaine = new Semaine((int) cell.getNumericCellValue());
             System.out.println("Semaine "+ cell.getNumericCellValue());
             int nbJour = 0;
@@ -90,8 +90,8 @@ public class OldReader {
         return semaine;
     }
 
-    private int [] heuresDebut = {745, 800, 900, 1000, 1330, 1545, 1800};
-    private int [] debutsCours = {2, 3, 7, 11, 25, 34, 43};
+    private final int [] heuresDebut = {745, 800, 900, 1000, 1330, 1545, 1800};
+    private final int [] debutsCours = {2, 3, 7, 11, 25, 34, 43};
 
     private int debutCoursToHeuresDebut(int debut) {
         for(int i = 0; i < debutsCours.length; i++) {
@@ -122,7 +122,7 @@ public class OldReader {
             // recup cours
             boolean parallele = false;
             for(int colCours : debutsCours) {
-                Cours cours = recupCours(colCours);
+                Cours cours = recupCours(colCours, false);
                 if (cours != null) {
                     if (cours.isEnParallele())
                         parallele = true;
@@ -131,10 +131,10 @@ public class OldReader {
             }
 
             if (parallele) {
-                row = sheet.getRow(row.getRowNum()+1);
+                this.row = sheet.getRow(row.getRowNum()+1);
 
                 for(int colCours : debutsCours) {
-                    Cours cours = recupCours(colCours);
+                    Cours cours = recupCours(colCours, true);
                     if (cours != null) {
                         if (cours.isEnParallele())
                             jour.addCours(cours);
@@ -145,14 +145,18 @@ public class OldReader {
         return jour;
     }
 
-    private Cours recupCours(int colCours) {
+    private Cours recupCours(int colCours, boolean bas) {
         Cours cours = null;
         System.out.println("recupInfosCours");
 
         // intitulé cours
         var cellIntitule = row.getCell(colCours);
 
-        if (cellIntitule != null && cellIntitule.getCellType() == STRING) {
+        if (cellIntitule != null && cellIntitule.getCellType() == STRING &&
+                (cellIntitule.getCellStyle() != null &&
+                cellIntitule.getCellStyle().getBorderLeft() != null &&
+                cellIntitule.getCellStyle().getBorderLeft() != BorderStyle.NONE))
+        {
             String intitule = cellIntitule.getStringCellValue();
 
             cours = new Cours(intitule);
@@ -160,15 +164,19 @@ public class OldReader {
             ZonedDateTime d = ZonedDateTime.ofInstant(date.toInstant(),
                     ZoneId.systemDefault());
 
+            System.out.println("minuit : "+d);
+
             int heure = debutCoursToHeuresDebut(colCours);
             d = d.plusHours(heure);
             int minutes = debutCoursToMinutesDebut(colCours);
             d = d.plusMinutes(minutes);
 
+            System.out.println("début cours : " + d);
+
             cours.setDebut(d);
 
             gestionTypeCours(intitule, cours, cellIntitule);
-            gestionEnseignantEtSalle(colCours, cellIntitule, cours, intitule);
+            gestionEnseignantEtSalle(colCours, cellIntitule, cours, intitule, bas);
         }
 
         System.out.println(cours);
@@ -176,57 +184,74 @@ public class OldReader {
         return cours;
     }
 
-    private void gestionEnseignantEtSalle(int colCours, Cell cellIntitule, Cours cours, String intitule) {
-        // enseignant
-        Row nextRow = sheet.getRow(row.getRowNum()+1);
-        var cellEnseignant = nextRow.getCell(colCours);
+    private void gestionEnseignantEtSalle(int colCours, Cell cellIntitule, Cours cours, String intitule, boolean bas) {
+        if (bas) {
+            // est-ce que c'est un créneau en //
+            if ((cellIntitule.getCellStyle() != null &&
+                    cellIntitule.getCellStyle().getBorderTop() != null &&
+                    cellIntitule.getCellStyle().getBorderTop() != BorderStyle.NONE))
+            {
+                cours.setEnParallele(true);
 
-        // est-ce que c'est un créneau en //
-        if ((cellIntitule.getCellStyle() != null &&
-                cellIntitule.getCellStyle().getBorderBottom() != null &&
-                cellIntitule.getCellStyle().getBorderBottom() != BorderStyle.NONE) ||
-                (cellEnseignant.getCellStyle() != null &&
-                        cellEnseignant.getCellStyle().getBorderTop() != null &&
-                        cellEnseignant.getCellStyle().getBorderTop() != BorderStyle.NONE))
-        {
-            cours.setEnParallele(true);
-
-            gestionEnsSalleParallele(colCours, cours, intitule);
+                gestionEnsSalleParallele(colCours, cours, intitule);
+            }
         } else {
-            gestionEnsSalleFull(colCours, cours, cellEnseignant, nextRow);
+            // enseignant
+            Row nextRow = sheet.getRow(row.getRowNum() + 1);
+            var cellEnseignant = nextRow.getCell(colCours);
+
+            // est-ce que c'est un créneau en //
+            if ((cellIntitule.getCellStyle() != null &&
+                    cellIntitule.getCellStyle().getBorderBottom() != null &&
+                    cellIntitule.getCellStyle().getBorderBottom() != BorderStyle.NONE) ||
+                    (cellEnseignant.getCellStyle() != null &&
+                            cellEnseignant.getCellStyle().getBorderTop() != null &&
+                            cellEnseignant.getCellStyle().getBorderTop() != BorderStyle.NONE)) {
+                cours.setEnParallele(true);
+
+                gestionEnsSalleParallele(colCours, cours, intitule);
+            } else {
+                gestionEnsSalleFull(colCours, cours, cellEnseignant, nextRow);
+            }
         }
     }
 
-    private static void gestionEnsSalleFull(int colCours, Cours cours, Cell cellEnseignant, Row nextRow) {
+    private void gestionEnsSalleFull(int colCours, Cours cours, Cell cellEnseignant, Row nextRow) {
         // l'enseignant est à part
         if (cellEnseignant.getCellType() == STRING)
             cours.setEnseignant(cellEnseignant.getStringCellValue());
 
-        var cellSalle = nextRow.getCell(colCours +6);
-        if (cellSalle != null && cellSalle.getCellType() == STRING) {
-            // créneau de 2h
-            cours.setDuree(2);
-            cours.setSalle(cellSalle.getStringCellValue());
-        } else {
-            cellSalle = nextRow.getCell(colCours +4);
+        // Recherche fin du cours
+        boolean fini = false;
+        int colFinCours = colCours + 1;
+        while(!fini) {
+            var cellFin = this.row.getCell(colFinCours);
+
+            if (cellFin != null && cellFin.getCellStyle() != null &&
+                    cellFin.getCellStyle().getBorderRight() != null &&
+                    cellFin.getCellStyle().getBorderRight() != BorderStyle.NONE) {
+                fini = true;
+                int duree = colFinCours + 1 - colCours;
+                System.out.println("Durée : " + duree + " en heures : " + duree/4.f);
+                cours.setDuree(duree/4.f);
+            }
+
+            colFinCours++;
+        }
+
+        // Recherche salle
+        fini = false;
+        int colSalle = colCours + 1;
+        while(!fini) {
+            var cellSalle = nextRow.getCell(colSalle);
             if (cellSalle != null && cellSalle.getCellType() == STRING) {
-                // créneau de 1h
-                cours.setDuree(1);
                 cours.setSalle(cellSalle.getStringCellValue());
-            } else {
-                cellSalle = nextRow.getCell(colCours +10);
-                if (cellSalle != null && cellSalle.getCellType() == STRING) {
-                    // créneau de 3h
-                    cours.setDuree(3);
-                    cours.setSalle(cellSalle.getStringCellValue());
-                } else {
-                    cellSalle = nextRow.getCell(colCours +14);
-                    if (cellSalle != null && cellSalle.getCellType() == STRING) {
-                        // créneau de 4h
-                        cours.setDuree(4);
-                        cours.setSalle(cellSalle.getStringCellValue());
-                    }
-                }
+                fini = true;
+            }
+            colSalle ++;
+            if (colSalle > colFinCours) {
+                // pas de salle
+                fini = true;
             }
         }
     }
@@ -242,33 +267,37 @@ public class OldReader {
 
             String enseignant = intitule.substring(debutEnseignant+1, finEnseignant);
             cours.setEnseignant(enseignant);
+        }
+        // Recherche fin du cours
+        boolean fini = false;
+        int colFinCours = colCours + 1;
+        while(!fini) {
+            var cellFin = this.row.getCell(colFinCours);
 
-            var cellSalle = row.getCell(colCours +6);
+            if (cellFin.getCellStyle() != null &&
+                    cellFin.getCellStyle().getBorderRight() != null &&
+                    cellFin.getCellStyle().getBorderRight() != BorderStyle.NONE) {
+                fini = true;
+                int duree = colFinCours + 1 - colCours;
+                System.out.println("Durée : " + duree + " en heures : " + duree/4.f);
+                cours.setDuree(duree/4.f);
+            }
+
+            colFinCours++;
+        }
+
+        fini = false;
+        int colSalle = colCours + 1;
+        while(!fini) {
+            var cellSalle = row.getCell(colSalle);
             if (cellSalle != null && cellSalle.getCellType() == STRING) {
-                // créneau de 2h
-                cours.setDuree(2);
                 cours.setSalle(cellSalle.getStringCellValue());
-            } else {
-                cellSalle = row.getCell(colCours +4);
-                if (cellSalle != null && cellSalle.getCellType() == STRING) {
-                    // créneau de 1h
-                    cours.setDuree(1);
-                    cours.setSalle(cellSalle.getStringCellValue());
-                } else {
-                    cellSalle = row.getCell(colCours +10);
-                    if (cellSalle != null && cellSalle.getCellType() == STRING) {
-                        // créneau de 3h
-                        cours.setDuree(3);
-                        cours.setSalle(cellSalle.getStringCellValue());
-                    } else {
-                        cellSalle = row.getCell(colCours +14);
-                        if (cellSalle != null && cellSalle.getCellType() == STRING) {
-                            // créneau de 4h
-                            cours.setDuree(4);
-                            cours.setSalle(cellSalle.getStringCellValue());
-                        }
-                    }
-                }
+                fini = true;
+            }
+            colSalle ++;
+            if (colSalle > colFinCours) {
+                // pas de salle
+                fini = true;
             }
         }
     }
@@ -301,9 +330,9 @@ public class OldReader {
 
             if (cell != null && cell.getCellType() == NUMERIC) {
                 try {
-                    Date date = cell.getDateCellValue();
-                    return date;
+                    return cell.getDateCellValue();
                 } catch (Exception e) {
+                    return null;
                 }
             }
         }

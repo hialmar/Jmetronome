@@ -10,20 +10,18 @@ import net.fortuna.ical4j.model.parameter.Value;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
-import java.time.DayOfWeek;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoField;
 
 public class ICSGenerator {
-    private Calendrier calendar;
+    private final Calendrier calendar;
 
     public ICSGenerator(Calendrier calendar) {
         this.calendar = calendar;
     }
 
     public void generate() throws FileNotFoundException {
-        TzId tzParam = new TzId(TimeZoneRegistry.getGlobalZoneId("Europe/Paris").getId());
         Calendar copyCalendar = new Calendar();
+        TzId tzParam = new TzId(TimeZoneRegistry.getGlobalZoneId("Europe/Paris").getId());
 
         for(Semaine semaine : calendar.getSemaines()) {
             if (semaine == null)

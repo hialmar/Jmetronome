@@ -78,7 +78,7 @@ public class Cours {
     @Override
     public String toString() {
         return  intitule +
-                ", enseignant : " + enseignant +
-                ", salle : " + salle;
+                (enseignant != null ? ", enseignant : " + enseignant : "") +
+                (salle != null ? ", salle : " + salle : "");
     }
 }

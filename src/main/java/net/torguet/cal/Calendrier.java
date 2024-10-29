@@ -1,11 +1,11 @@
 package net.torguet.cal;
 
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 
 public class Calendrier {
-    private ArrayList<Semaine> semaines = new ArrayList<>();
-    private Date startDate;
+    private final ArrayList<Semaine> semaines = new ArrayList<>();
+    private ZonedDateTime startDate;
 
     public Calendrier() { }
 
@@ -17,11 +17,11 @@ public class Calendrier {
         return semaines;
     }
 
-    public Date getStartDate() {
+    public ZonedDateTime getStartDate() {
         return startDate;
     }
 
-    public void setStartDate(Date startDate) {
+    public void setStartDate(ZonedDateTime startDate) {
         this.startDate = startDate;
     }
 }

@@ -11,7 +11,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.Date;
 import java.util.Iterator;
 
 import static org.apache.poi.ss.usermodel.CellType.*;
@@ -23,7 +22,7 @@ public class OldReader {
     private final XSSFSheet sheet;
 
     private Row row;
-    private Date date;
+    private ZonedDateTime date;
 
     public OldReader(String fileName, int sheetNumber) throws IOException {
         calendar = new Calendrier();
@@ -72,7 +71,7 @@ public class OldReader {
             while (rowIterator.hasNext()) {
                 Jour jour = recupJour(row);
                 if (jour != null) {
-                    date.setTime(date.getTime()+24*60*60*1000);
+                    date = date.plusDays(1);
                     System.out.println(date);
                     semaine.addJour(jour);
                     nbJour++;
@@ -82,9 +81,9 @@ public class OldReader {
                 }
                 row = rowIterator.next();
             }
-            date.setTime(date.getTime()+24*60*60*1000);
+            date = date.plusDays(1);
             System.out.println(date);
-            date.setTime(date.getTime()+24*60*60*1000);
+            date = date.plusDays(1);
             System.out.println(date);
         }
         return semaine;
@@ -161,13 +160,10 @@ public class OldReader {
 
             cours = new Cours(intitule);
 
-            ZonedDateTime d = ZonedDateTime.ofInstant(date.toInstant(),
-                    ZoneId.systemDefault());
-
-            System.out.println("minuit : "+d);
+            System.out.println("minuit : "+date);
 
             int heure = debutCoursToHeuresDebut(colCours);
-            d = d.plusHours(heure);
+            var d = date.plusHours(heure);
             int minutes = debutCoursToMinutesDebut(colCours);
             d = d.plusMinutes(minutes);
 
@@ -302,7 +298,7 @@ public class OldReader {
         }
     }
 
-    private static void gestionTypeCours(String intitule, Cours cours, Cell cellIntitule) {
+    private void gestionTypeCours(String intitule, Cours cours, Cell cellIntitule) {
         if (intitule.contains(" C"))
             cours.setType(TypeCours.TYPE_COURS);
         else if (intitule.contains(" TD"))
@@ -322,7 +318,7 @@ public class OldReader {
         }
     }
 
-    private Date searchStartDate(Iterator<Row> rowIterator) {
+    private ZonedDateTime searchStartDate(Iterator<Row> rowIterator) {
         while (rowIterator.hasNext()) {
             row = rowIterator.next();
 
@@ -330,7 +326,8 @@ public class OldReader {
 
             if (cell != null && cell.getCellType() == NUMERIC) {
                 try {
-                    return cell.getDateCellValue();
+                    ZoneId zoneId = ZoneId.of("Europe/Paris");
+                    return ZonedDateTime.ofInstant(cell.getDateCellValue().toInstant(), zoneId);
                 } catch (Exception e) {
                     return null;
                 }

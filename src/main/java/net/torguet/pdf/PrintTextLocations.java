@@ -22,8 +22,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
+import net.torguet.cal.Cours;
+import net.torguet.cal.Jour;
+import net.torguet.pdf.structure.Element;
+import net.torguet.pdf.structure.JourSemaine;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -37,6 +43,15 @@ import org.apache.pdfbox.text.TextPosition;
  */
 public class PrintTextLocations extends PDFTextStripper
 {
+    ArrayList<Jour> jours = new ArrayList<>();
+    ArrayList<Cours> cours = new ArrayList<>();
+    ArrayList<JourSemaine> joursSemaine = new ArrayList<>();
+    ArrayList<Element> horaires = new ArrayList<>();
+    ArrayList<Element> elements = new ArrayList<>();
+
+    ArrayList<String> semaine = new ArrayList<>();
+    String [] semTab = {"lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"};
+
     /**
      * Instantiate a new PDFTextStripper object.
      *
@@ -44,6 +59,7 @@ public class PrintTextLocations extends PDFTextStripper
      */
     public PrintTextLocations() throws IOException
     {
+        Collections.addAll(semaine, semTab);
     }
 
     /**
@@ -66,8 +82,8 @@ public class PrintTextLocations extends PDFTextStripper
             {
                 PDFTextStripper stripper = new PrintTextLocations();
                 stripper.setSortByPosition( true );
-                stripper.setStartPage( 0 );
-                stripper.setEndPage( document.getNumberOfPages() );
+                stripper.setStartPage( 3 ); // 0 );
+                stripper.setEndPage( 3 ); // document.getNumberOfPages() );
 
                 Writer dummy = new OutputStreamWriter(new ByteArrayOutputStream());
                 stripper.writeText(document, dummy);
@@ -82,16 +98,113 @@ public class PrintTextLocations extends PDFTextStripper
     protected void writeString(String string, List<TextPosition> textPositions) throws IOException
     {
         System.out.println(string);
-        TextPosition text = textPositions.getFirst();
-        // for (TextPosition text : textPositions)
+
+        float x1 = 1000, y1 = 1000, x2 = -1, y2 = -1;
+
+        for (TextPosition text : textPositions)
         {
-            System.out.println( "String[" + text.getXDirAdj() + "," +
-                    text.getYDirAdj() + " fs=" + text.getFontSize() + " xscale=" +
-                    text.getXScale() + " height=" + text.getHeightDir() + " space=" +
-                    text.getWidthOfSpace() + " width=" +
-                    text.getWidthDirAdj() + "]" + text.getUnicode() );
+//            System.out.println( "String[" + text.getXDirAdj() + "," +
+//                    text.getYDirAdj() + " fs=" + text.getFontSize() + " xscale=" +
+//                    text.getXScale() + " height=" + text.getHeightDir() + " space=" +
+//                    text.getWidthOfSpace() + " width=" +
+//                    text.getWidthDirAdj() + "]" + text.getUnicode() );
+            if (text.getXDirAdj() < x1) {
+                x1 = text.getXDirAdj();
+            }
+            if (text.getYDirAdj() < y1) {
+                y1 = text.getYDirAdj();
+            }
+            if (text.getXDirAdj() + text.getWidthDirAdj() > x2) {
+                x2 = text.getXDirAdj() + text.getWidthDirAdj() ;
+            }
+            if (text.getYDirAdj() + text.getHeightDir()  > y2) {
+                y2 = text.getYDirAdj() + text.getHeightDir();
+            }
+        }
+
+        System.out.println("x1 : "+x1+" y1 : "+y1+" x2 : "+x2+" y2 : "+y2);
+
+        if (semaine.contains(string)) {
+            System.out.println("Jour Semaine : " + string);
+            JourSemaine js = new JourSemaine();
+            js.setChaine(string);
+            js.setX1(x1);
+            js.setX2(x2);
+            js.setY1(y1);
+            js.setY2(y2);
+            joursSemaine.add(js);
+        } else {
+            Element element = new Element();
+            element.setChaine(string);
+            element.setX1(x1);
+            element.setX2(x2);
+            element.setY1(y1);
+            element.setY2(y2);
+            elements.add(element);
+
+            String dateMatcher = "^([0-9]{2})\\/([0-9]{2})\\/([0-9]{4})";
+            String timeMatcher = "^([0-9]{2})\\:([0-9]{2})";
+
+            if(string.matches(dateMatcher)) { // date
+                System.out.println("Date : "+string);
+            } else if (string.matches(timeMatcher)) { // horaire
+                System.out.println("Horaire : "+string);
+                horaires.add(element);
+            } else {
+                System.out.println("Autre : "+string);
+            }
         }
     }
+
+    /**
+     * Start a new page. Default implementation is to do nothing. Subclasses may provide additional information.
+     *
+     * @param page The page we are about to process.
+     *
+     * @throws IOException If there is any error writing to the stream.
+     */
+    protected void startPage(PDPage page) throws IOException
+    {
+        System.out.println("Page begins");
+        elements.clear();
+        joursSemaine.clear();
+    }
+
+    /**
+     * End a page. Default implementation is to do nothing. Subclasses may provide additional information.
+     *
+     * @param page The page we are about to process.
+     *
+     * @throws IOException If there is any error writing to the stream.
+     */
+    protected void endPage(PDPage page) throws IOException
+    {
+        System.out.println("Page ends");
+
+        for(var e : elements) {
+            for (var js : joursSemaine) {
+                if (e.overlapsX(js)) {
+                    System.out.println("L'élément : "+e+" correspond en X avec le jour "+js);
+                }
+                if (e.overlapsY(js)) {
+                    System.out.println("L'élément : "+e+" correspond en Y avec le jour "+js);
+                }
+            }
+            for (var h : horaires) {
+                if (e.overlapsX(h)) {
+                    System.out.println("L'élément : "+e+" correspond en X avec l'horaire "+h);
+                }
+                if (e.overlapsY(h)) {
+                    System.out.println("L'élément : "+e+" correspond en Y avec l'horaire "+h);
+                }
+            }
+        }
+
+
+
+
+    }
+
 
     /**
      * This will print the usage for this document.

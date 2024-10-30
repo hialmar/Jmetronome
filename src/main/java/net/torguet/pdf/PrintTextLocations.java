@@ -101,13 +101,27 @@ public class PrintTextLocations extends PDFTextStripper
 
         float x1 = 1000, y1 = 1000, x2 = -1, y2 = -1;
 
+        float height = -1;
+
+        int i = 0;
+
         for (TextPosition text : textPositions)
         {
-//            System.out.println( "String[" + text.getXDirAdj() + "," +
-//                    text.getYDirAdj() + " fs=" + text.getFontSize() + " xscale=" +
-//                    text.getXScale() + " height=" + text.getHeightDir() + " space=" +
-//                    text.getWidthOfSpace() + " width=" +
-//                    text.getWidthDirAdj() + "]" + text.getUnicode() );
+            if (i==0) {
+                System.out.println( "String[" + text.getXDirAdj() + "," +
+                        text.getYDirAdj() + " fs=" + text.getFontSize() + " xscale=" +
+                        text.getXScale() +  " yscale=" +
+                        text.getYScale() + " height=" + text.getHeightDir() + " space=" +
+                        text.getWidthOfSpace() + " width=" +
+                        text.getWidthDirAdj() + "]" + text.getUnicode() );
+                i++;
+            }
+
+            if(height == -1) {
+                height = text.getPageHeight();
+                System.out.println("Page Height = "+height);
+            }
+
             if (text.getXDirAdj() < x1) {
                 x1 = text.getXDirAdj();
             }
@@ -125,14 +139,14 @@ public class PrintTextLocations extends PDFTextStripper
         System.out.println("x1 : "+x1+" y1 : "+y1+" x2 : "+x2+" y2 : "+y2);
 
         if (semaine.contains(string)) {
-            System.out.println("Jour Semaine : " + string);
             JourSemaine js = new JourSemaine();
             js.setChaine(string);
-            js.setX1(x1);
-            js.setX2(x2);
+            js.setX1(height - x2);
+            js.setX2(height - x1);
             js.setY1(y1);
             js.setY2(y2);
             joursSemaine.add(js);
+            System.out.println("Jour Semaine : " + js);
         } else {
             Element element = new Element();
             element.setChaine(string);
@@ -183,19 +197,13 @@ public class PrintTextLocations extends PDFTextStripper
 
         for(var e : elements) {
             for (var js : joursSemaine) {
-                if (e.overlapsX(js)) {
-                    System.out.println("L'élément : "+e+" correspond en X avec le jour "+js);
-                }
-                if (e.overlapsY(js)) {
-                    System.out.println("L'élément : "+e+" correspond en Y avec le jour "+js);
+                if (js.overlaps(e)) {
+                    System.out.println("L'élément : "+e+" correspond avec le jour "+js);
                 }
             }
             for (var h : horaires) {
                 if (e.overlapsX(h)) {
                     System.out.println("L'élément : "+e+" correspond en X avec l'horaire "+h);
-                }
-                if (e.overlapsY(h)) {
-                    System.out.println("L'élément : "+e+" correspond en Y avec l'horaire "+h);
                 }
             }
         }

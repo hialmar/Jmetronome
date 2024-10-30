@@ -16,11 +16,8 @@ public class JourSemaine extends Element {
         this.jour = jour;
     }
 
-    public boolean overlapsX(Element e) {
+    public boolean overlaps(Element e) {
         return ((x1 < e.y1 && e.y1 < x2) || (x1 < e.y2 && e.y2 < x2));
     }
 
-    public boolean overlapsY(Element e) {
-        return ((y1 < e.x1 && e.x1 < y2) || (y1 < e.x2 && e.x2 < y2));
-    }
 }

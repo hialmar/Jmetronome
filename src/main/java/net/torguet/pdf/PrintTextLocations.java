@@ -22,6 +22,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -29,6 +32,7 @@ import java.util.List;
 import net.torguet.cal.Cours;
 import net.torguet.cal.Jour;
 import net.torguet.pdf.structure.Element;
+import net.torguet.pdf.structure.Horaire;
 import net.torguet.pdf.structure.JourSemaine;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -43,14 +47,20 @@ import org.apache.pdfbox.text.TextPosition;
  */
 public class PrintTextLocations extends PDFTextStripper
 {
-    ArrayList<Jour> jours = new ArrayList<>();
-    ArrayList<Cours> cours = new ArrayList<>();
-    ArrayList<JourSemaine> joursSemaine = new ArrayList<>();
-    ArrayList<Element> horaires = new ArrayList<>();
-    ArrayList<Element> elements = new ArrayList<>();
-
+    final ArrayList<Jour> jours = new ArrayList<>();
+    final ArrayList<Cours> cours = new ArrayList<>();
+    final ArrayList<JourSemaine> joursSemaine = new ArrayList<>();
+    final ArrayList<Horaire> horaires = new ArrayList<>();
+    final ArrayList<Element> elements = new ArrayList<>();
+    private ArrayList<Element> dates = new ArrayList<>();
     ArrayList<String> semaine = new ArrayList<>();
     String [] semTab = {"lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"};
+
+    static final String dateMatcher = "^([0-9]{2})\\/([0-9]{2})\\/([0-9]{4})";
+    static final String timeMatcher = "^([0-9]{2})\\:([0-9]{2})";
+
+    boolean suite = false;
+
 
     /**
      * Instantiate a new PDFTextStripper object.
@@ -138,36 +148,32 @@ public class PrintTextLocations extends PDFTextStripper
 
         System.out.println("x1 : "+x1+" y1 : "+y1+" x2 : "+x2+" y2 : "+y2);
 
-        if (semaine.contains(string)) {
-            JourSemaine js = new JourSemaine();
-            js.setChaine(string);
-            js.setX1(height - x2);
-            js.setX2(height - x1);
-            js.setY1(y1);
-            js.setY2(y2);
-            joursSemaine.add(js);
-            System.out.println("Jour Semaine : " + js);
-        } else {
-            Element element = new Element();
-            element.setChaine(string);
-            element.setX1(x1);
-            element.setX2(x2);
-            element.setY1(y1);
-            element.setY2(y2);
-            elements.add(element);
+        Element element;
 
-            String dateMatcher = "^([0-9]{2})\\/([0-9]{2})\\/([0-9]{4})";
-            String timeMatcher = "^([0-9]{2})\\:([0-9]{2})";
+        if (semaine.contains(string)) {
+            element = new JourSemaine();
+            joursSemaine.add((JourSemaine) element);
+            System.out.println("Jour Semaine " +string);
+        } else if (string.matches(timeMatcher)) {
+            element = new Horaire();
+            System.out.println("Horaire : "+string);
+            horaires.add((Horaire) element);
+        } else {
+            element = new Element();
 
             if(string.matches(dateMatcher)) { // date
                 System.out.println("Date : "+string);
-            } else if (string.matches(timeMatcher)) { // horaire
-                System.out.println("Horaire : "+string);
-                horaires.add(element);
+                dates.add(element);
             } else {
                 System.out.println("Autre : "+string);
+                elements.add(element);
             }
         }
+        element.setChaine(string);
+        element.setX1(x1);
+        element.setX2(x2);
+        element.setY1(y1);
+        element.setY2(y2);
     }
 
     /**
@@ -180,8 +186,11 @@ public class PrintTextLocations extends PDFTextStripper
     protected void startPage(PDPage page) throws IOException
     {
         System.out.println("Page begins");
-        elements.clear();
-        joursSemaine.clear();
+        if (!this.suite) {
+            elements.clear();
+            joursSemaine.clear();
+            System.out.println("Nouvelle semaine");
+        }
     }
 
     /**
@@ -195,22 +204,42 @@ public class PrintTextLocations extends PDFTextStripper
     {
         System.out.println("Page ends");
 
+        boolean fini = true;
+
+        for(var date : dates) {
+            for (var js : joursSemaine) {
+                if (date.overlapsX(js)) {
+                    System.out.println("La date : "+date+" correspond avec le jour "+js);
+                    ZoneId zoneId = ZoneId.of("Europe/Paris");
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss").withZone(zoneId);
+                    ZonedDateTime zonedDateTime = ZonedDateTime.parse(date.getChaine()+" 00:00:00", formatter);
+                    js.setJour(new Jour(zonedDateTime));
+                    System.out.println("Jour : "+js.getJour().getDate());
+                }
+            }
+        }
+
         for(var e : elements) {
             for (var js : joursSemaine) {
                 if (js.overlaps(e)) {
                     System.out.println("L'élément : "+e+" correspond avec le jour "+js);
+                    js.addElement(e);
                 }
             }
             for (var h : horaires) {
                 if (e.overlapsX(h)) {
                     System.out.println("L'élément : "+e+" correspond en X avec l'horaire "+h);
+                    h.addElement(e);
                 }
+            }
+
+            if (e.getChaine().contains("suite")) {
+                System.out.println("Suite de la semaine");
+                fini = false;
             }
         }
 
-
-
-
+        this.suite = ! fini;
     }
 
 

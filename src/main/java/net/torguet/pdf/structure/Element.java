@@ -51,11 +51,11 @@ public class Element {
     }
 
     public boolean overlapsX(Element e) {
-        return ((x1 < e.x1 && e.x1 < x2) || (x1 < e.x2 && e.x2 < x2));
+        return ((x1 <= e.x1 && e.x1 <= x2) || (x1 <= e.x2 && e.x2 <= x2));
     }
 
     public boolean overlapsY(Element e) {
-        return ((y1 < e.y1 && e.y1 < y2) || (y1 < e.y2 && e.y2 < y2));
+        return ((y1 <= e.y1 && e.y1 <= y2) || (y1 <= e.y2 && e.y2 <= y2));
     }
 
     @Override

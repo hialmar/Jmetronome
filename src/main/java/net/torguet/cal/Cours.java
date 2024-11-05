@@ -87,8 +87,8 @@ public class Cours {
     @Override
     public String toString() {
         return  intitule +
-                (enseignant != null ? ", enseignant : " + enseignant : "") +
-                (groupe != null ? ", groupe : " + groupe : "") +
+                (enseignant != null ? ", ens : " + enseignant : "") +
+                (groupe != null ? ", grp : " + groupe : "") +
                 (salle != null ? ", salle : " + salle : "");
     }
 }

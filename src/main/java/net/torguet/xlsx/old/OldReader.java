@@ -188,7 +188,7 @@ public class OldReader {
                     cellIntitule.getCellStyle().getBorderTop() != BorderStyle.NONE))
             {
                 cours.setEnParallele(true);
-                cours.setIntitule("Groupe 2");
+                cours.setGroupe("2");
 
                 gestionEnsSalleParallele(colCours, cours, intitule);
             }
@@ -205,7 +205,7 @@ public class OldReader {
                             cellEnseignant.getCellStyle().getBorderTop() != null &&
                             cellEnseignant.getCellStyle().getBorderTop() != BorderStyle.NONE)) {
                 cours.setEnParallele(true);
-                cours.setIntitule("Groupe 1");
+                cours.setGroupe("1");
 
                 gestionEnsSalleParallele(colCours, cours, intitule);
             } else {

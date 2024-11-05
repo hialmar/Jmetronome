@@ -1,11 +1,19 @@
 package net.torguet.pdf.structure;
 
+import java.util.ArrayList;
+
 public class Element {
     protected String chaine;
     protected float x1;
     protected float y1;
     protected float x2;
     protected float y2;
+
+    private boolean salle = false;
+    private boolean amphi = false;
+    private String salleCours;
+
+    private final ArrayList<Horaire> horaires = new ArrayList<>();
 
     public Element() {
     }
@@ -16,6 +24,31 @@ public class Element {
 
     public void setChaine(String chaine) {
         this.chaine = chaine;
+
+        if(chaine.contains("Salle: ")) {
+            salleCours = chaine.substring(7);
+
+            if (salleCours.startsWith("Amphi")) {
+                if (salleCours.length() != 5) {
+                    salleCours = salleCours.substring(5);
+                    amphi = true;
+                    System.out.println("Amphi trouvé : "+salleCours);
+                }
+            } else {
+                salle = true;
+                System.out.println("Salle trouvée : "+salleCours);
+            }
+        }
+
+        int parentheseDebut = chaine.indexOf('(');
+        if (parentheseDebut>0) {
+            int parentheseFin = chaine.indexOf(')');
+            if (parentheseFin>0 && parentheseFin - parentheseDebut < 5) {
+                salleCours = chaine;
+                amphi = true;
+                System.out.println("Amphi trouvé : " + salleCours);
+            }
+        }
     }
 
     public float getX1() {
@@ -58,6 +91,18 @@ public class Element {
         return ((y1 <= e.y1 && e.y1 <= y2) || (y1 <= e.y2 && e.y2 <= y2));
     }
 
+    public boolean isSalle() {
+        return salle;
+    }
+
+    public boolean isAmphi() {
+        return amphi;
+    }
+
+    public String getSalleCours() {
+        return salleCours;
+    }
+
     @Override
     public String toString() {
         return "Element{" +
@@ -67,5 +112,13 @@ public class Element {
                 ", x2=" + x2 +
                 ", y2=" + y2 +
                 '}';
+    }
+
+    public ArrayList<Horaire> getHoraires() {
+        return horaires;
+    }
+
+    public void addHoraire(Horaire horaire) {
+        this.horaires.add(horaire);
     }
 }

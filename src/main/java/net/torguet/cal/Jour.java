@@ -7,8 +7,6 @@ public class Jour {
     private final ZonedDateTime date;
     private final ArrayList<Cours> cours;
 
-
-
     public Jour(ZonedDateTime date) {
         this.date = date;
         this.cours = new ArrayList<>();
@@ -23,5 +21,15 @@ public class Jour {
 
     public void addCours(Cours cours) {
         this.cours.add(cours);
+    }
+
+    public ArrayList<Cours> getCoursAt(ZonedDateTime zonedDateTime) {
+        ArrayList<Cours> coursArrayList = new ArrayList<>();
+        for(var c : cours) {
+            if (c.getDebut().compareTo(zonedDateTime)>0 && c.getDebut().plusMinutes((long)(c.getDuree()*60.0)).compareTo(zonedDateTime)<=0) {
+                coursArrayList.add(c);
+            }
+        }
+        return coursArrayList;
     }
 }

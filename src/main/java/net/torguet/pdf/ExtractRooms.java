@@ -17,11 +17,19 @@ package net.torguet.pdf;
  * limitations under the License.
  */
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
+import net.torguet.cal.Calendrier;
+import net.torguet.cal.Jour;
+import net.torguet.pdf.structure.Element;
+import net.torguet.pdf.structure.Horaire;
+import net.torguet.pdf.structure.JourSemaine;
+import net.torguet.xlsx.old.OldReader;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.text.PDFTextStripper;
+import org.apache.pdfbox.text.TextPosition;
+
+import java.io.*;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -29,35 +37,26 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import net.torguet.cal.Cours;
-import net.torguet.cal.Jour;
-import net.torguet.pdf.structure.Element;
-import net.torguet.pdf.structure.Horaire;
-import net.torguet.pdf.structure.JourSemaine;
-import org.apache.pdfbox.Loader;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.text.PDFTextStripper;
-import org.apache.pdfbox.text.TextPosition;
-
 /**
  * This is an example on how to get some x/y coordinates of text.
  *
  * @author Ben Litchfield
  */
-public class PrintTextLocations extends PDFTextStripper
+public class ExtractRooms extends PDFTextStripper
 {
-    final ArrayList<JourSemaine> joursSemaine = new ArrayList<>();
-    final ArrayList<Horaire> horaires = new ArrayList<>();
-    final ArrayList<Element> elements = new ArrayList<>();
+    private static final String [] semTab = {"lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"};
+    private static final String dateMatcher = "^([0-9]{2})\\/([0-9]{2})\\/([0-9]{4})";
+    private static final String timeMatcher = "^([0-9]{2})\\:([0-9]{2})";
+
+    private final Calendrier calendrier;
+
+    private final ArrayList<JourSemaine> joursSemaine = new ArrayList<>();
+    private final ArrayList<Horaire> horaires = new ArrayList<>();
+    private final ArrayList<Element> elements = new ArrayList<>();
     private final ArrayList<Element> dates = new ArrayList<>();
-    ArrayList<String> semaine = new ArrayList<>();
-    String [] semTab = {"lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"};
+    private final ArrayList<String> semaine = new ArrayList<>();
 
-    static final String dateMatcher = "^([0-9]{2})\\/([0-9]{2})\\/([0-9]{4})";
-    static final String timeMatcher = "^([0-9]{2})\\:([0-9]{2})";
-
-    boolean suite = false;
+    private boolean suite = false;
 
 
     /**
@@ -65,8 +64,9 @@ public class PrintTextLocations extends PDFTextStripper
      *
      * @throws IOException If there is an error loading the properties.
      */
-    public PrintTextLocations() throws IOException
+    public ExtractRooms(Calendrier calendrier) throws IOException
     {
+        this.calendrier = calendrier;
         Collections.addAll(semaine, semTab);
     }
 
@@ -79,23 +79,21 @@ public class PrintTextLocations extends PDFTextStripper
      */
     public static void main( String[] args ) throws IOException
     {
-        if( args.length != 1 )
-        {
-            usage();
-        }
-        else
-        {
-            System.out.println("Loading " + args[0]);
-            try (PDDocument document = Loader.loadPDF(new File(args[0])))
-            {
-                PDFTextStripper stripper = new PrintTextLocations();
-                stripper.setSortByPosition( true );
-                stripper.setStartPage( 3 ); // 0 );
-                stripper.setEndPage( 3 ); // document.getNumberOfPages() );
+        OldReader oldReader = new OldReader("2024-2025 Master.xlsx", 1);
 
-                Writer dummy = new OutputStreamWriter(new ByteArrayOutputStream());
-                stripper.writeText(document, dummy);
-            }
+        Calendrier calendrier = oldReader.traiterFichier();
+
+        oldReader.close();
+
+        try (PDDocument document = Loader.loadPDF(new File("edt_3A_2024_05_28.pdf")))
+        {
+            PDFTextStripper stripper = new ExtractRooms(calendrier);
+            stripper.setSortByPosition( true );
+            stripper.setStartPage( 3 ); // 0 );
+            stripper.setEndPage( 3 ); // document.getNumberOfPages() );
+
+            Writer dummy = new OutputStreamWriter(new ByteArrayOutputStream());
+            stripper.writeText(document, dummy);
         }
     }
 
@@ -219,6 +217,11 @@ public class PrintTextLocations extends PDFTextStripper
                     ZonedDateTime zonedDateTime = ZonedDateTime.parse(date.getChaine()+" 00:00:00", formatter);
                     js.setJour(new Jour(zonedDateTime));
                     System.out.println("Jour : "+js.getJour().getDate());
+                    // La date est plus étendue que le jour de la semaine
+                    js.setX1(date.getX1());
+                    js.setX2(date.getX2());
+                    js.setY1(date.getY1());
+                    js.setY2(date.getY2());
                 }
             }
         }
@@ -226,13 +229,13 @@ public class PrintTextLocations extends PDFTextStripper
         for(var e : elements) {
             for (var js : joursSemaine) {
                 if (js.overlaps(e)) {
-                    System.out.println("L'élément : "+e+" correspond avec le jour "+js);
+                    // System.out.println("L'élément : "+e+" correspond avec le jour "+js);
                     js.addElement(e);
                 }
             }
             for (var h : horaires) {
                 if (e.overlapsX(h)) {
-                    System.out.println("L'élément : "+e+" correspond en X avec l'horaire "+h);
+                    // System.out.println("L'élément : "+e+" correspond en X avec l'horaire "+h);
                     e.addHoraire(h);
                 }
             }
@@ -240,6 +243,36 @@ public class PrintTextLocations extends PDFTextStripper
             if (e.getChaine().contains("suite")) {
                 System.out.println("Suite de la semaine");
                 fini = false;
+            }
+        }
+
+        for (var js : joursSemaine) {
+            Jour jour = calendrier.getJour(js.getJour().getDate());
+            System.out.println(js.getJour().getDate());
+            System.out.println(jour.getDate());
+            for (var cours : jour.getCours()) {
+                System.out.println("On travaille sur le cours "+cours);
+                long heureDebut = cours.getDebut().getHour();
+                long minuteDebut = cours.getDebut().getMinute();
+                float hDebut = heureDebut + minuteDebut / 60.0f;
+                System.out.println("Heure début : "+hDebut);
+                ZonedDateTime fin = cours.getDebut().plusMinutes((long)(cours.getDuree()*60));
+                long heureFin = fin.getHour();
+                long minuteFin = fin.getMinute();
+                float hFin = heureFin + minuteFin / 60.0f;
+                System.out.println("Heure fin : "+hFin);
+
+                for(var e : js.getElements()) {
+                    if (e.isAmphi() || e.isSalle()) {
+                        for (var h : e.getHoraires()) {
+                            float hH = h.getHeures() + h.getMinutes() / 60.0f;
+                            // System.out.println("Horaire "+hH);
+                            if (hH >= hDebut && hH <= hFin) {
+                                System.out.println("Salle trouvée : "+e.getSalleCours());
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -252,6 +285,6 @@ public class PrintTextLocations extends PDFTextStripper
      */
     private static void usage()
     {
-        System.err.println( "Usage: java " + PrintTextLocations.class.getName() + " <input-pdf>" );
+        System.err.println( "Usage: java " + ExtractRooms.class.getName() + " <input-pdf>" );
     }
 }

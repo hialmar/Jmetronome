@@ -10,6 +10,7 @@ public class Cours {
     private float duree;
     private boolean enParallele;
     private String salle;
+    private String groupe;
 
     public Cours(String intitule) {
         this.intitule = intitule;
@@ -75,10 +76,19 @@ public class Cours {
         this.salle = salle;
     }
 
+    public String getGroupe() {
+        return groupe;
+    }
+
+    public void setGroupe(String groupe) {
+        this.groupe = groupe;
+    }
+
     @Override
     public String toString() {
         return  intitule +
                 (enseignant != null ? ", enseignant : " + enseignant : "") +
+                (groupe != null ? ", groupe : " + groupe : "") +
                 (salle != null ? ", salle : " + salle : "");
     }
 }

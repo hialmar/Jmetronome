@@ -61,7 +61,10 @@ public class OldReader {
             if (!rowIterator.hasNext())
                 return null;
             row = rowIterator.next();
-            cell = sheet.getRow(row.getRowNum()-1).getCell(1);
+            var prevRow = sheet.getRow(row.getRowNum()-1);
+            if (prevRow != null) {
+                cell = prevRow.getCell(1);
+            }
         }
 
         if(cell.getCellType() == NUMERIC || cell.getCellType() == FORMULA) {
@@ -89,8 +92,8 @@ public class OldReader {
         return semaine;
     }
 
-    private final int [] heuresDebut = {745, 800, 900, 1000, 1330, 1545, 1800};
-    private final int [] debutsCours = {2, 3, 7, 11, 25, 34, 43};
+    private final int [] heuresDebut = {745, 800, 900, 1000, 1300, 1330, 1545, 1615, 1800};
+    private final int [] debutsCours = {2, 3, 7, 11, 23, 25, 34, 36, 43};
 
     private int debutCoursToHeuresDebut(int debut) {
         for(int i = 0; i < debutsCours.length; i++) {
@@ -129,7 +132,8 @@ public class OldReader {
                 }
             }
 
-            if (parallele) {
+            //if (parallele) {
+                // recherche groupe 2
                 this.row = sheet.getRow(row.getRowNum()+1);
 
                 for(int colCours : debutsCours) {
@@ -139,7 +143,7 @@ public class OldReader {
                             jour.addCours(cours);
                     }
                 }
-            }
+            //}
         }
         return jour;
     }
@@ -150,11 +154,10 @@ public class OldReader {
 
         // intitulé cours
         var cellIntitule = row.getCell(colCours);
+        var prevCell = row.getCell(colCours-1);
 
         if (cellIntitule != null && cellIntitule.getCellType() == STRING &&
-                (cellIntitule.getCellStyle() != null &&
-                cellIntitule.getCellStyle().getBorderLeft() != null &&
-                cellIntitule.getCellStyle().getBorderLeft() != BorderStyle.NONE))
+                (hasLeftBorder(cellIntitule) || hasRightBorder(prevCell)))
         {
             String intitule = cellIntitule.getStringCellValue();
 
@@ -180,12 +183,24 @@ public class OldReader {
         return cours;
     }
 
+    private boolean hasRightBorder(Cell cell) {
+        return cell.getCellStyle() != null &&
+                cell.getCellStyle().getBorderRight() != null &&
+                cell.getCellStyle().getBorderRight() != BorderStyle.NONE;
+    }
+
+    private boolean hasLeftBorder(Cell cell) {
+        return cell.getCellStyle() != null &&
+                cell.getCellStyle().getBorderLeft() != null &&
+                cell.getCellStyle().getBorderLeft() != BorderStyle.NONE;
+    }
+
     private void gestionEnseignantEtSalle(int colCours, Cell cellIntitule, Cours cours, String intitule, boolean bas) {
         if (bas) {
+            Row prevRow = sheet.getRow(row.getRowNum() - 1);
+            var aboveCell = prevRow.getCell(colCours);
             // est-ce que c'est un créneau en //
-            if ((cellIntitule.getCellStyle() != null &&
-                    cellIntitule.getCellStyle().getBorderTop() != null &&
-                    cellIntitule.getCellStyle().getBorderTop() != BorderStyle.NONE))
+            if (hasTopBorder(cellIntitule) || hasBottomBorder(aboveCell))
             {
                 cours.setEnParallele(true);
                 cours.setGroupe("2");
@@ -198,12 +213,8 @@ public class OldReader {
             var cellEnseignant = nextRow.getCell(colCours);
 
             // est-ce que c'est un créneau en //
-            if ((cellIntitule.getCellStyle() != null &&
-                    cellIntitule.getCellStyle().getBorderBottom() != null &&
-                    cellIntitule.getCellStyle().getBorderBottom() != BorderStyle.NONE) ||
-                    (cellEnseignant.getCellStyle() != null &&
-                            cellEnseignant.getCellStyle().getBorderTop() != null &&
-                            cellEnseignant.getCellStyle().getBorderTop() != BorderStyle.NONE)) {
+            if (hasBottomBorder(cellIntitule) || hasTopBorder(cellEnseignant))
+            {
                 cours.setEnParallele(true);
                 cours.setGroupe("1");
 
@@ -214,6 +225,18 @@ public class OldReader {
         }
     }
 
+    private boolean hasTopBorder(Cell cell) {
+        return cell.getCellStyle() != null &&
+                cell.getCellStyle().getBorderTop() != null &&
+                cell.getCellStyle().getBorderTop() != BorderStyle.NONE;
+    }
+
+    private boolean hasBottomBorder(Cell cell) {
+        return cell.getCellStyle() != null &&
+                cell.getCellStyle().getBorderBottom() != null &&
+                cell.getCellStyle().getBorderBottom() != BorderStyle.NONE;
+    }
+
     private void gestionEnsSalleFull(int colCours, Cours cours, Cell cellEnseignant, Row nextRow) {
         // l'enseignant est à part
         if (cellEnseignant.getCellType() == STRING)
@@ -221,17 +244,26 @@ public class OldReader {
 
         // Recherche fin du cours
         boolean fini = false;
+        boolean sansFin = false;
         int colFinCours = colCours + 1;
         while(!fini) {
             var cellFin = this.row.getCell(colFinCours);
+            var nextCell = this.row.getCell(colFinCours+1);
 
-            if (cellFin != null && cellFin.getCellStyle() != null &&
-                    cellFin.getCellStyle().getBorderRight() != null &&
-                    cellFin.getCellStyle().getBorderRight() != BorderStyle.NONE) {
+            if (cellFin != null && (hasRightBorder(cellFin) || hasLeftBorder(nextCell)))
+            {
                 fini = true;
                 int duree = colFinCours + 1 - colCours;
                 System.out.println("Durée : " + duree + " en heures : " + duree/4.f);
                 cours.setDuree(duree/4.f);
+            }
+
+            if (cellFin == null) {
+                System.err.println("Impossible de trouver la fin");
+                fini = true;
+                sansFin = true;
+                System.out.println("Durée par défaut : 2h");
+                cours.setDuree(2.f);
             }
 
             colFinCours++;
@@ -245,6 +277,13 @@ public class OldReader {
             if (cellSalle != null && cellSalle.getCellType() == STRING) {
                 cours.setSalle(cellSalle.getStringCellValue());
                 fini = true;
+
+                if (sansFin){
+                    long duree = colSalle + 1 - colCours + 1;
+                    if (duree != cours.getDuree()*4) {
+                        cours.setDuree(duree/4.f);
+                    }
+                }
             }
             colSalle ++;
             if (colSalle > colFinCours) {
@@ -268,17 +307,25 @@ public class OldReader {
         }
         // Recherche fin du cours
         boolean fini = false;
-        int colFinCours = colCours + 1;
+        boolean sansFin = false;
+        int colFinCours = colCours + 2;
         while(!fini) {
             var cellFin = this.row.getCell(colFinCours);
+            var prevCell = this.row.getCell(colFinCours-1);
 
-            if (cellFin.getCellStyle() != null &&
-                    cellFin.getCellStyle().getBorderRight() != null &&
-                    cellFin.getCellStyle().getBorderRight() != BorderStyle.NONE) {
+            if (cellFin != null && (hasRightBorder(cellFin) || hasLeftBorder(prevCell))) {
                 fini = true;
                 int duree = colFinCours + 1 - colCours;
                 System.out.println("Durée : " + duree + " en heures : " + duree/4.f);
                 cours.setDuree(duree/4.f);
+            }
+
+            if (cellFin == null) {
+                System.err.println("Impossible de trouver la fin");
+                fini = true;
+                System.out.println("Durée par défaut : 2h");
+                cours.setDuree(2.f);
+                sansFin = true;
             }
 
             colFinCours++;
@@ -291,6 +338,13 @@ public class OldReader {
             if (cellSalle != null && cellSalle.getCellType() == STRING) {
                 cours.setSalle(cellSalle.getStringCellValue());
                 fini = true;
+
+                if (sansFin){
+                    long duree = colSalle + 1 - colCours + 1;
+                    if (duree != cours.getDuree()*4) {
+                        cours.setDuree(duree/4.f);
+                    }
+                }
             }
             colSalle ++;
             if (colSalle > colFinCours) {
@@ -339,7 +393,7 @@ public class OldReader {
     }
 
     public static void main(String[] args) throws IOException {
-        OldReader oldReader = new OldReader("2024-2025 Master.xlsx", 1);
+        OldReader oldReader = new OldReader("EDT S5 STRI 1A L3 2024-2025.xlsx", 0);
 
         Calendrier calendrier = oldReader.traiterFichier();
 

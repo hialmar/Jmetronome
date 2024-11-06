@@ -86,7 +86,8 @@ public class Cours {
 
     @Override
     public String toString() {
-        return  intitule +
+        return  (type == TypeCours.TYPE_CONTROLE ? "Contrôle " : "") +
+                intitule +
                 (enseignant != null ? ", ens : " + enseignant : "") +
                 (groupe != null ? ", grp : " + groupe : "") +
                 (salle != null ? ", salle : " + salle : "");

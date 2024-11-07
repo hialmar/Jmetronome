@@ -23,6 +23,8 @@ public class OldReader {
 
     private Row row;
     private ZonedDateTime date;
+    private Semaine semaine;
+    private int numeroSemaine;
 
     public OldReader(String fileName, int sheetNumber) throws IOException {
         calendar = new Calendrier();
@@ -41,7 +43,6 @@ public class OldReader {
         if (date != null) {
             calendar.setStartDate(date);
 
-            Semaine semaine;
             do {
                 semaine = recupSemaine(rowIterator);
                 if (semaine != null) {
@@ -53,7 +54,7 @@ public class OldReader {
     }
 
     private Semaine recupSemaine(Iterator<Row> rowIterator) {
-        Semaine semaine = null;
+        numeroSemaine = 0;
         // le numéro de semaine est au-dessus et à droite
         var cell = sheet.getRow(row.getRowNum()-1).getCell(1);
 
@@ -68,7 +69,15 @@ public class OldReader {
         }
 
         if(cell.getCellType() == NUMERIC || cell.getCellType() == FORMULA) {
+            numeroSemaine = (int) cell.getNumericCellValue();
+            if (semaine != null && numeroSemaine != semaine.getSemaine() + 1) {
+                System.out.println("Numero de semaine incorrect");
+                // il faut recalculer le jour
+                date = searchStartDate(rowIterator);
+                System.out.println("Nouvelle date "+date);
+            }
             semaine = new Semaine((int) cell.getNumericCellValue());
+
             System.out.println("Semaine "+ cell.getNumericCellValue());
             int nbJour = 0;
             while (rowIterator.hasNext()) {
@@ -376,8 +385,9 @@ public class OldReader {
 
     private ZonedDateTime searchStartDate(Iterator<Row> rowIterator) {
         while (rowIterator.hasNext()) {
-            row = rowIterator.next();
-
+            if(row == null) {
+                row = rowIterator.next();
+            }
             Cell cell = row.getCell(0);
 
             if (cell != null && cell.getCellType() == NUMERIC) {
@@ -388,12 +398,14 @@ public class OldReader {
                     return null;
                 }
             }
+            row = rowIterator.next();
         }
         return null;
     }
 
     public static void main(String[] args) throws IOException {
-        OldReader oldReader = new OldReader("EDT S5 STRI 1A L3 2024-2025.xlsx", 0);
+        //OldReader oldReader = new OldReader("EDT S5 STRI 1A L3 2024-2025.xlsx", 0);
+        OldReader oldReader = new OldReader("2024-2025 M1.xlsx", 0);
 
         Calendrier calendrier = oldReader.traiterFichier();
 

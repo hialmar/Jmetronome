@@ -195,10 +195,6 @@ public class OldWriter {
         cell.setCellValue(dayOfWeek.getDisplayName(TextStyle.FULL_STANDALONE, Locale.FRANCE));
     }
 
-    private final int [] heuresDebut = {745, 800, 900, 1000, 1300, 1330, 1545, 1615, 1800};
-    private final int [] debutsCours = {2, 3, 7, 11, 23, 25, 34, 36, 43};
-
-
     private void generateSemaineDebut(Semaine semaine) {
         XSSFRow row = spreadsheet.createRow(currentRowNumber++);
         int cellNumber = 1;

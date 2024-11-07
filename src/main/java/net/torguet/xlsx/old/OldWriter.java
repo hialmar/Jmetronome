@@ -25,6 +25,17 @@ public class OldWriter {
     XSSFRow rowHaut;
     XSSFRow rowBas;
     XSSFCellStyle dateStyle;
+    XSSFCellStyle topLeftStyle;
+    XSSFCellStyle topRightStyle;
+    XSSFCellStyle topStyle;
+    XSSFCellStyle bottomStyle;
+    XSSFCellStyle bottomLeftStyle;
+    XSSFCellStyle bottomRightStyle;
+    XSSFCellStyle roomStyle;
+    XSSFCellStyle topBottomStyle;
+    XSSFCellStyle leftStyle;
+    XSSFCellStyle rightStyle;
+    XSSFCellStyle simpleRoomStyle;
 
     public OldWriter(Calendrier calendrier) {
         this.calendrier = calendrier;
@@ -37,6 +48,46 @@ public class OldWriter {
         }
         dateStyle = workbook.createCellStyle();
         dateStyle.setDataFormat(16); // d-mmm
+        topLeftStyle = workbook.createCellStyle();
+        topLeftStyle.setBorderTop(BorderStyle.MEDIUM);
+        topLeftStyle.setBorderLeft(BorderStyle.MEDIUM);
+        topRightStyle = workbook.createCellStyle();
+        topRightStyle.setBorderTop(BorderStyle.MEDIUM);
+        topRightStyle.setBorderRight(BorderStyle.MEDIUM);
+        topStyle = workbook.createCellStyle();
+        topStyle.setBorderTop(BorderStyle.MEDIUM);
+        bottomStyle = workbook.createCellStyle();
+        bottomStyle.setBorderBottom(BorderStyle.MEDIUM);
+        bottomLeftStyle = workbook.createCellStyle();
+        bottomLeftStyle.setBorderLeft(BorderStyle.MEDIUM);
+        bottomLeftStyle.setBorderBottom(BorderStyle.MEDIUM);
+        bottomRightStyle = workbook.createCellStyle();
+        bottomRightStyle.setBorderBottom(BorderStyle.MEDIUM);
+        bottomRightStyle.setBorderRight(BorderStyle.MEDIUM);
+        bottomRightStyle.setFillBackgroundColor(IndexedColors.BRIGHT_GREEN.getIndex());
+        bottomRightStyle.setFillPattern(FillPatternType.LESS_DOTS);
+        roomStyle = workbook.createCellStyle();
+        roomStyle.setBorderBottom(BorderStyle.MEDIUM);
+        roomStyle.setFillBackgroundColor(IndexedColors.BRIGHT_GREEN.getIndex());
+        roomStyle.setFillPattern(FillPatternType.LESS_DOTS);
+        topBottomStyle = workbook.createCellStyle();
+        topBottomStyle.setBorderTop(BorderStyle.MEDIUM);
+        topBottomStyle.setBorderBottom(BorderStyle.MEDIUM);
+        leftStyle = workbook.createCellStyle();
+        leftStyle.setBorderTop(BorderStyle.MEDIUM);
+        leftStyle.setBorderBottom(BorderStyle.MEDIUM);
+        leftStyle.setBorderLeft(BorderStyle.MEDIUM);
+        rightStyle = workbook.createCellStyle();
+        rightStyle.setBorderTop(BorderStyle.MEDIUM);
+        rightStyle.setBorderBottom(BorderStyle.MEDIUM);
+        rightStyle.setBorderRight(BorderStyle.MEDIUM);
+        rightStyle.setFillBackgroundColor(IndexedColors.BRIGHT_GREEN.getIndex());
+        rightStyle.setFillPattern(FillPatternType.LESS_DOTS);
+        simpleRoomStyle = workbook.createCellStyle();
+        simpleRoomStyle.setBorderTop(BorderStyle.MEDIUM);
+        simpleRoomStyle.setBorderBottom(BorderStyle.MEDIUM);
+        simpleRoomStyle.setFillBackgroundColor(IndexedColors.BRIGHT_GREEN.getIndex());
+        simpleRoomStyle.setFillPattern(FillPatternType.LESS_DOTS);
     }
 
     public void generate(File file) throws IOException {
@@ -63,13 +114,31 @@ public class OldWriter {
             int startCell = computeStartCell(cours);
             XSSFCell cell = rowHaut.createCell(startCell);
             cell.setCellValue(cours.getIntitule());
+            cell.setCellStyle(topLeftStyle);
 
-            XSSFCell cellBas = rowBas.createCell(startCell);
-            cellBas.setCellValue(cours.getEnseignant());
+            XSSFCell cellEnseignant = rowBas.createCell(startCell);
+            cellEnseignant.setCellValue(cours.getEnseignant());
+            cellEnseignant.setCellStyle(bottomLeftStyle);
 
             int cellSalle = startCell + (int)(cours.getDuree()*4) - 2;
+
+            for(int i=startCell+1; i < cellSalle; i++) {
+                XSSFCell cellTop = rowHaut.createCell(i);
+                cellTop.setCellStyle(topStyle);
+                XSSFCell cellBottom = rowBas.createCell(i);
+                cellBottom.setCellStyle(bottomStyle);
+            }
+
             XSSFCell salle = rowBas.createCell(cellSalle);
             salle.setCellValue(cours.getSalle());
+            salle.setCellStyle(roomStyle);
+            XSSFCell salle2 = rowBas.createCell(cellSalle+1);
+            salle2.setCellStyle(bottomRightStyle);
+
+            XSSFCell topRight1Cell = rowHaut.createCell(cellSalle);
+            topRight1Cell.setCellStyle(topStyle);
+            XSSFCell topRight2Cell = rowHaut.createCell(cellSalle+1);
+            topRight2Cell.setCellStyle(topRightStyle);
         }
     }
 
@@ -86,15 +155,29 @@ public class OldWriter {
     }
 
     private void generateCoursGroupe(Cours cours) {
+
         if (cours.getGroupe().equals("1")) {
-            int startCell = computeStartCell(cours);
-            XSSFCell cell = rowHaut.createCell(startCell);
-            cell.setCellValue(cours.getIntitule());
+            generateCoursGroupeHelper(cours, rowHaut);
         } else {
-            int startCell = computeStartCell(cours);
-            XSSFCell cell = rowBas.createCell(startCell);
-            cell.setCellValue(cours.getIntitule());
+            generateCoursGroupeHelper(cours, rowBas);
         }
+    }
+
+    private void generateCoursGroupeHelper(Cours cours, XSSFRow rowHaut) {
+        int startCell = computeStartCell(cours);
+        XSSFCell cell = rowHaut.createCell(startCell);
+        cell.setCellValue(cours.getIntitule());
+        cell.setCellStyle(leftStyle);
+        int cellSalle = startCell + (int)(cours.getDuree()*4) - 2;
+        for(int i=startCell+1; i < cellSalle; i++) {
+            XSSFCell cellTop = rowHaut.createCell(i);
+            cellTop.setCellStyle(topBottomStyle);
+        }
+        XSSFCell salle = rowHaut.createCell(cellSalle);
+        salle.setCellStyle(simpleRoomStyle);
+        salle.setCellValue(cours.getSalle());
+        XSSFCell last = rowHaut.createCell(cellSalle+1);
+        last.setCellStyle(rightStyle);
     }
 
     private void generateJourDebut(Jour jour) {

@@ -404,8 +404,8 @@ public class OldReader {
     }
 
     public static void main(String[] args) throws IOException {
-        //OldReader oldReader = new OldReader("EDT S5 STRI 1A L3 2024-2025.xlsx", 0);
-        OldReader oldReader = new OldReader("2024-2025 M1.xlsx", 0);
+        OldReader oldReader = new OldReader("EDT S5 STRI 1A L3 2024-2025.xlsx", 0);
+        //M1 : OldReader oldReader = new OldReader("2024-2025 M1.xlsx", 0);
 
         Calendrier calendrier = oldReader.traiterFichier();
 

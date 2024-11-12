@@ -1,9 +1,8 @@
 package net.torguet.xlsx.old;
 
 import net.torguet.cal.*;
-import org.apache.poi.ss.usermodel.BorderStyle;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFColor;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
@@ -376,10 +375,20 @@ public class OldReader {
             cours.setType(TypeCours.TYPE_PROJET);
 
         // Contrôle
-        if (cellIntitule.getCellStyle() != null &&
-        cellIntitule.getCellStyle().getFillBackgroundColor() != 64) {
-            System.out.println("Couleur de " + intitule + " : " + cellIntitule.getCellStyle().getFillBackgroundColor());
-            cours.setType(TypeCours.TYPE_CONTROLE);
+        if (cellIntitule.getCellStyle() != null)
+        {
+            XSSFColor colorBg = (XSSFColor)cellIntitule.getCellStyle().getFillBackgroundColorColor();
+            XSSFColor colorFg = (XSSFColor)cellIntitule.getCellStyle().getFillForegroundColorColor();
+            if (colorBg != null && colorFg != null) {
+                int indexFg = colorFg.getIndex();
+                int indexBg = colorBg.getIndex();
+                int fill = cellIntitule.getCellStyle().getFillPattern().getCode();
+
+                if (fill == FillPatternType.SOLID_FOREGROUND.getCode()) {
+                    System.out.println("Couleur de " + intitule + " : " + cellIntitule.getCellStyle().getFillBackgroundColor());
+                    cours.setType(TypeCours.TYPE_CONTROLE);
+                }
+            }
         }
     }
 
@@ -405,7 +414,9 @@ public class OldReader {
 
     public static void main(String[] args) throws IOException {
         OldReader oldReader = new OldReader("EDT S5 STRI 1A L3 2024-2025.xlsx", 0);
+        //L3 : OldReader oldReader = new OldReader("EDT S5 STRI 1A L3 2024-2025.xlsx", 0);
         //M1 : OldReader oldReader = new OldReader("2024-2025 M1.xlsx", 0);
+        //M2 : OldReader oldReader = new OldReader("2024-2025 Master.xlsx", 1);
 
         Calendrier calendrier = oldReader.traiterFichier();
 

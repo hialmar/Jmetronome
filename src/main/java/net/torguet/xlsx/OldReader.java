@@ -1,6 +1,5 @@
-package net.torguet.xlsx.old;
+package net.torguet.xlsx;
 
-import net.torguet.cal.*;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.model.StylesTable;
 import org.apache.poi.xssf.model.ThemesTable;
@@ -15,19 +14,16 @@ import java.util.Iterator;
 import static org.apache.poi.ss.usermodel.CellType.*;
 
 public class OldReader {
-    private final Calendrier calendar;
 
     private final FileInputStream fis;
     private final XSSFSheet sheet;
 
     private Row row;
     private ZonedDateTime date;
-    private Semaine semaine;
     private int numeroSemaine;
     private XSSFWorkbook workbook;
 
     public OldReader(String fileName, int sheetNumber) throws IOException {
-        calendar = new Calendrier();
         fis = new FileInputStream(fileName);
         workbook = new XSSFWorkbook(fis);
         sheet = workbook.getSheetAt(sheetNumber);
@@ -37,30 +33,25 @@ public class OldReader {
         fis.close();
     }
 
-    public Calendrier traiterFichier() {
+    public void traiterFichier() {
         Iterator<Row> rowIterator = sheet.iterator();
         date = searchStartDate(rowIterator);
         if (date != null) {
-            calendar.setStartDate(date);
-
+            boolean ok = true;
             do {
-                semaine = recupSemaine(rowIterator);
-                if (semaine != null) {
-                    calendar.addSemaine(semaine);
-                }
-            } while (semaine != null);
+                ok = recupSemaine(rowIterator);
+            } while (ok);
         }
-        return calendar;
     }
 
-    private Semaine recupSemaine(Iterator<Row> rowIterator) {
+    private boolean recupSemaine(Iterator<Row> rowIterator) {
         numeroSemaine = 0;
         // le numéro de semaine est au-dessus et à droite
         var cell = sheet.getRow(row.getRowNum()-1).getCell(1);
 
         while (cell == null || (cell.getCellType() != NUMERIC && cell.getCellType() != FORMULA)) {
             if (!rowIterator.hasNext())
-                return null;
+                return false;
             row = rowIterator.next();
             var prevRow = sheet.getRow(row.getRowNum()-1);
             if (prevRow != null) {
@@ -70,22 +61,14 @@ public class OldReader {
 
         if(cell.getCellType() == NUMERIC || cell.getCellType() == FORMULA) {
             numeroSemaine = (int) cell.getNumericCellValue();
-            if (semaine != null && numeroSemaine != semaine.getSemaine() + 1) {
-                System.out.println("Numero de semaine incorrect");
-                // il faut recalculer le jour
-                date = searchStartDate(rowIterator);
-                System.out.println("Nouvelle date "+date);
-            }
-            semaine = new Semaine((int) cell.getNumericCellValue());
 
             System.out.println("Semaine "+ cell.getNumericCellValue());
             int nbJour = 0;
             while (rowIterator.hasNext()) {
-                Jour jour = recupJour(row);
-                if (jour != null) {
+                boolean jour = recupJour(row);
+                if (jour) {
                     date = date.plusDays(1);
                     System.out.println(date);
-                    semaine.addJour(jour);
                     nbJour++;
                     if(nbJour>=5) {
                         break;
@@ -98,7 +81,7 @@ public class OldReader {
             date = date.plusDays(1);
             System.out.println(date);
         }
-        return semaine;
+        return true;
     }
 
     private final int [] heuresDebut = {745, 800, 900, 1000, 1300, 1330, 1545, 1615, 1800};
@@ -122,23 +105,15 @@ public class OldReader {
         return -1;
     }
 
-    private Jour recupJour(Row row) {
-        Jour jour = null;
+    private boolean recupJour(Row row) {
+        boolean ok = true;
         var cell = row.getCell(1);
         if (cell != null && cell.getCellType() == STRING) {
             String jourSemaine  = cell.getStringCellValue();
             System.out.println(jourSemaine);
-            jour = new Jour(date);
 
-            // recup cours
-            boolean parallele = false;
             for(int colCours : debutsCours) {
-                Cours cours = recupCours(colCours, false);
-                if (cours != null) {
-                    if (cours.isEnParallele())
-                        parallele = true;
-                    jour.addCours(cours);
-                }
+                ok = recupCours(colCours, false);
             }
 
             //if (parallele) {
@@ -146,20 +121,16 @@ public class OldReader {
                 this.row = sheet.getRow(row.getRowNum()+1);
 
                 for(int colCours : debutsCours) {
-                    Cours cours = recupCours(colCours, true);
-                    if (cours != null) {
-                        if (cours.isEnParallele())
-                            jour.addCours(cours);
-                    }
+                    ok = recupCours(colCours, true);
                 }
             //}
         }
-        return jour;
+        return ok;
     }
 
-    private Cours recupCours(int colCours, boolean bas) {
-        Cours cours = null;
+    private boolean recupCours(int colCours, boolean bas) {
         System.out.println("recupInfosCours");
+        boolean ok = false;
 
         // intitulé cours
         var cellIntitule = row.getCell(colCours);
@@ -170,7 +141,9 @@ public class OldReader {
         {
             String intitule = cellIntitule.getStringCellValue();
 
-            cours = new Cours(intitule);
+            System.out.println(intitule);
+
+            ok = true;
 
             System.out.println("minuit : "+date);
 
@@ -181,15 +154,13 @@ public class OldReader {
 
             System.out.println("début cours : " + d);
 
-            cours.setDebut(d);
-
-            gestionTypeCours(intitule, cours, cellIntitule);
-            gestionEnseignantEtSalle(colCours, cellIntitule, cours, intitule, bas);
+            gestionTypeCours(intitule, ok, cellIntitule);
+            gestionEnseignantEtSalle(colCours, cellIntitule, ok, intitule, bas);
         }
 
-        System.out.println(cours);
+        System.out.println(ok);
 
-        return cours;
+        return ok;
     }
 
     private boolean hasRightBorder(Cell cell) {
@@ -204,16 +175,13 @@ public class OldReader {
                 cell.getCellStyle().getBorderLeft() != BorderStyle.NONE;
     }
 
-    private void gestionEnseignantEtSalle(int colCours, Cell cellIntitule, Cours cours, String intitule, boolean bas) {
+    private void gestionEnseignantEtSalle(int colCours, Cell cellIntitule, boolean cours, String intitule, boolean bas) {
         if (bas) {
             Row prevRow = sheet.getRow(row.getRowNum() - 1);
             var aboveCell = prevRow.getCell(colCours);
             // est-ce que c'est un créneau en //
             if (hasTopBorder(cellIntitule) || hasBottomBorder(aboveCell))
             {
-                cours.setEnParallele(true);
-                cours.setGroupe("2");
-
                 gestionEnsSalleParallele(colCours, cours, intitule);
             }
         } else {
@@ -224,9 +192,6 @@ public class OldReader {
             // est-ce que c'est un créneau en //
             if (hasBottomBorder(cellIntitule) || hasTopBorder(cellEnseignant))
             {
-                cours.setEnParallele(true);
-                cours.setGroupe("1");
-
                 gestionEnsSalleParallele(colCours, cours, intitule);
             } else {
                 gestionEnsSalleFull(colCours, cours, cellEnseignant, nextRow);
@@ -246,10 +211,10 @@ public class OldReader {
                 cell.getCellStyle().getBorderBottom() != BorderStyle.NONE;
     }
 
-    private void gestionEnsSalleFull(int colCours, Cours cours, Cell cellEnseignant, Row nextRow) {
+    private void gestionEnsSalleFull(int colCours, boolean cours, Cell cellEnseignant, Row nextRow) {
         // l'enseignant est à part
         if (cellEnseignant.getCellType() == STRING)
-            cours.setEnseignant(cellEnseignant.getStringCellValue());
+            System.out.println("Ens : "+cellEnseignant.getStringCellValue());
 
         // Recherche fin du cours
         boolean fini = false;
@@ -264,7 +229,6 @@ public class OldReader {
                 fini = true;
                 int duree = colFinCours + 1 - colCours;
                 System.out.println("Durée : " + duree + " en heures : " + duree/4.f);
-                cours.setDuree(duree/4.f);
             }
 
             if (cellFin == null) {
@@ -272,7 +236,6 @@ public class OldReader {
                 fini = true;
                 sansFin = true;
                 System.out.println("Durée par défaut : 2h");
-                cours.setDuree(2.f);
             }
 
             colFinCours++;
@@ -284,14 +247,12 @@ public class OldReader {
         while(!fini) {
             var cellSalle = nextRow.getCell(colSalle);
             if (cellSalle != null && cellSalle.getCellType() == STRING) {
-                cours.setSalle(cellSalle.getStringCellValue());
+                System.out.println("Salle : "+cellSalle.getStringCellValue());
                 fini = true;
 
                 if (sansFin){
                     long duree = colSalle + 1 - colCours + 1;
-                    if (duree != cours.getDuree()*4) {
-                        cours.setDuree(duree/4.f);
-                    }
+                    System.out.println("Durée "+duree + " en heures : " + duree/4.f);
                 }
             }
             colSalle ++;
@@ -302,7 +263,7 @@ public class OldReader {
         }
     }
 
-    private void gestionEnsSalleParallele(int colCours, Cours cours, String intitule) {
+    private void gestionEnsSalleParallele(int colCours, boolean cours, String intitule) {
         // tout est dans l'intitulé
         int debutEnseignant = intitule.indexOf('(');
         if (debutEnseignant != -1) {
@@ -312,7 +273,7 @@ public class OldReader {
             }
 
             String enseignant = intitule.substring(debutEnseignant+1, finEnseignant);
-            cours.setEnseignant(enseignant);
+            System.out.println("Ens: "+enseignant);
         }
         // Recherche fin du cours
         boolean fini = false;
@@ -326,14 +287,12 @@ public class OldReader {
                 fini = true;
                 int duree = colFinCours + 1 - colCours;
                 System.out.println("Durée : " + duree + " en heures : " + duree/4.f);
-                cours.setDuree(duree/4.f);
             }
 
             if (cellFin == null) {
                 System.err.println("Impossible de trouver la fin");
                 fini = true;
                 System.out.println("Durée par défaut : 2h");
-                cours.setDuree(2.f);
                 sansFin = true;
             }
 
@@ -345,14 +304,12 @@ public class OldReader {
         while(!fini) {
             var cellSalle = row.getCell(colSalle);
             if (cellSalle != null && cellSalle.getCellType() == STRING) {
-                cours.setSalle(cellSalle.getStringCellValue());
+                System.out.println("Salle: "+cellSalle.getStringCellValue());
                 fini = true;
 
                 if (sansFin){
                     long duree = colSalle + 1 - colCours + 1;
-                    if (duree != cours.getDuree()*4) {
-                        cours.setDuree(duree/4.f);
-                    }
+                    System.out.println("Durée : " + duree + " en heures : " + duree/4.f);
                 }
             }
             colSalle ++;
@@ -363,17 +320,7 @@ public class OldReader {
         }
     }
 
-    private void gestionTypeCours(String intitule, Cours cours, Cell cellIntitule) {
-        if (intitule.contains(" C"))
-            cours.setType(TypeCours.TYPE_COURS);
-        else if (intitule.contains(" TD"))
-            cours.setType(TypeCours.TYPE_TD);
-        else if (intitule.contains(" TP"))
-            cours.setType(TypeCours.TYPE_TP);
-        else if (intitule.contains(" BE"))
-            cours.setType(TypeCours.TYPE_BE);
-        else if (intitule.contains(" Projet"))
-            cours.setType(TypeCours.TYPE_PROJET);
+    private void gestionTypeCours(String intitule, boolean cours, Cell cellIntitule) {
 
         // Contrôle
         if (cellIntitule.getCellStyle() != null)
@@ -388,7 +335,6 @@ public class OldReader {
 
                 if (fill == FillPatternType.SOLID_FOREGROUND.getCode()) {
                     System.out.println("Couleur de " + intitule + " : " + cellIntitule.getCellStyle().getFillBackgroundColor());
-                    cours.setType(TypeCours.TYPE_CONTROLE);
 
                     int numCellStyle = workbook.getNumCellStyles();
                     for(int i=0; i< numCellStyle; i++) {
@@ -469,12 +415,8 @@ public class OldReader {
         //M1 : OldReader oldReader = new OldReader("2024-2025 M1.xlsx", 0);
         //M2 : OldReader oldReader = new OldReader("2024-2025 Master.xlsx", 1);
 
-        Calendrier calendrier = oldReader.traiterFichier();
+        oldReader.traiterFichier();
 
         oldReader.close();
-
-        ICSGenerator generator = new ICSGenerator(calendrier);
-
-        generator.generate();
     }
 }

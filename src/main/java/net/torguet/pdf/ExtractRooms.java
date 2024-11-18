@@ -77,7 +77,7 @@ public class ExtractRooms extends PDFTextStripper
      *
      * @throws IOException If there is an error parsing the document.
      */
-    public static void main( String[] args ) throws IOException
+    public static void main( String[] args ) throws Exception
     {
         OldReader oldReader = new OldReader("2024-2025 Master.xlsx", 1);
 

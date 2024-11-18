@@ -7,5 +7,5 @@ public enum TypeCours {
     TYPE_BE,
     TYPE_PROJET,
     TYPE_CONTROLE,
-    TYPE_AUTRE
+    TYPE_INGE, TYPE_AUTRE
 }

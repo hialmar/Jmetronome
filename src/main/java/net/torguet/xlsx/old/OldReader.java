@@ -6,10 +6,10 @@ import org.apache.poi.xssf.model.StylesTable;
 import org.apache.poi.xssf.model.ThemesTable;
 import org.apache.poi.xssf.usermodel.*;
 
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Iterator;
 
 import static org.apache.poi.ss.usermodel.CellType.*;
@@ -26,11 +26,17 @@ public class OldReader {
     private int numeroSemaine;
     private XSSFWorkbook workbook;
 
-    public OldReader(String fileName, int sheetNumber) throws IOException {
+    private final ColorReader colorReader;
+
+    private int rowNumber;
+    private int colNumber;
+
+    public OldReader(String fileName, int sheetNumber) throws Exception {
         calendar = new Calendrier();
         fis = new FileInputStream(fileName);
         workbook = new XSSFWorkbook(fis);
         sheet = workbook.getSheetAt(sheetNumber);
+        colorReader = new ColorReader(fileName);
     }
 
     public void close() throws IOException {
@@ -38,6 +44,8 @@ public class OldReader {
     }
 
     public Calendrier traiterFichier() {
+        rowNumber = 1;
+        colNumber = 1;
         Iterator<Row> rowIterator = sheet.iterator();
         date = searchStartDate(rowIterator);
         if (date != null) {
@@ -62,6 +70,7 @@ public class OldReader {
             if (!rowIterator.hasNext())
                 return null;
             row = rowIterator.next();
+            rowNumber++;
             var prevRow = sheet.getRow(row.getRowNum()-1);
             if (prevRow != null) {
                 cell = prevRow.getCell(1);
@@ -92,6 +101,7 @@ public class OldReader {
                     }
                 }
                 row = rowIterator.next();
+                rowNumber++;
             }
             date = date.plusDays(1);
             System.out.println(date);
@@ -125,6 +135,7 @@ public class OldReader {
     private Jour recupJour(Row row) {
         Jour jour = null;
         var cell = row.getCell(1);
+        colNumber = 1;
         if (cell != null && cell.getCellType() == STRING) {
             String jourSemaine  = cell.getStringCellValue();
             System.out.println(jourSemaine);
@@ -133,6 +144,7 @@ public class OldReader {
             // recup cours
             boolean parallele = false;
             for(int colCours : debutsCours) {
+                colNumber = colCours+1;
                 Cours cours = recupCours(colCours, false);
                 if (cours != null) {
                     if (cours.isEnParallele())
@@ -146,6 +158,7 @@ public class OldReader {
                 this.row = sheet.getRow(row.getRowNum()+1);
 
                 for(int colCours : debutsCours) {
+                    colNumber = colCours+1;
                     Cours cours = recupCours(colCours, true);
                     if (cours != null) {
                         if (cours.isEnParallele())
@@ -376,77 +389,41 @@ public class OldReader {
             cours.setType(TypeCours.TYPE_PROJET);
 
         // Contrôle
-        if (cellIntitule.getCellStyle() != null)
-        {
-            XSSFColor colorBg = (XSSFColor)cellIntitule.getCellStyle().getFillBackgroundColorColor();
-            XSSFColor colorFg = (XSSFColor)cellIntitule.getCellStyle().getFillForegroundColorColor();
-            if (colorBg != null && colorFg != null) {
-                int indexFg = colorFg.getIndex();
-                int indexBg = colorBg.getIndex();
-                int fill = cellIntitule.getCellStyle().getFillPattern().getCode();
+        String couleur = colorReader.getColor(rowNumber, colNumber);
+        if (couleur != null && ! couleur.equals("0")) {
 
+            switch (couleur) {
+                case "FFFFC000": // Ingé
+                    cours.setType(TypeCours.TYPE_INGE);
+                    break;
 
-                if (fill == FillPatternType.SOLID_FOREGROUND.getCode()) {
-                    System.out.println("Couleur de " + intitule + " : " + cellIntitule.getCellStyle().getFillBackgroundColor());
-                    cours.setType(TypeCours.TYPE_CONTROLE);
-
-                    int numCellStyle = workbook.getNumCellStyles();
-                    for(int i=0; i< numCellStyle; i++) {
-                        XSSFCellStyle style = workbook.getCellStyleAt(i);
-                        if (style == cellIntitule.getCellStyle()) {
-                            System.out.println("C'est le style "+i);
-                        }
-                    }
-
-                    StylesTable stylesTable = workbook.getStylesSource();
-
-                    numCellStyle = stylesTable.getNumCellStyles();
-
-                    for(int i=0; i< numCellStyle; i++) {
-                        XSSFCellStyle style = stylesTable.getStyleAt(i);
-                        if (style == cellIntitule.getCellStyle()) {
-                            System.out.println("C'est le style "+i);
-                        }
-                    }
-
-                    IndexedColorMap indexedColorMap = stylesTable.getIndexedColors();
-
-                    byte[] bg = indexedColorMap.getRGB(indexBg);
-                    byte[] fg = indexedColorMap.getRGB(indexFg);
-
-                    System.out.println("BG : " + bg);
-                    System.out.println("FG : " + fg);
-
-                    ThemesTable themesTable = workbook.getTheme();
-
-                    XSSFColor colorBg2 = themesTable.getThemeColor(indexBg);
-                    XSSFColor colorFg2 = themesTable.getThemeColor(indexFg);
-
-                    if (colorBg2 != null)
-                        bg = colorBg2.getRGB();
-                    if (colorFg2 != null)
-                        fg = colorFg2.getRGB();
-                    System.out.println("BG2 : " + bg);
-                    System.out.println("FG2 : " + fg);
-
-                    for (IndexedColors c : IndexedColors.values()) {
-                        if (c.index == indexFg){
-                            System.out.println("Color: " + c.name());
-                        }
-                        if (c.index == indexBg){
-                            System.out.println("Color: " + c.name());
-                        }
-                    }
-
-                }
             }
+            System.out.println("Couleur de " + intitule + " : " + couleur);
+            cours.setType(TypeCours.TYPE_CONTROLE);
         }
+
+
+        //if (cellIntitule.getCellStyle() != null)
+        //{
+            //XSSFColor colorBg = (XSSFColor)cellIntitule.getCellStyle().getFillBackgroundColorColor();
+//            //XSSFColor colorFg = (XSSFColor)cellIntitule.getCellStyle().getFillForegroundColorColor();
+//            //if (colorBg != null && colorFg != null) {
+//                int indexFg = colorFg.getIndex(); // not working currently
+//                int indexBg = colorBg.getIndex(); // not working currently
+//                int fill = cellIntitule.getCellStyle().getFillPattern().getCode();
+//
+//                //if (fill == FillPatternType.SOLID_FOREGROUND.getCode()) {
+//
+//                //}
+//            }
+//        }
     }
 
     private ZonedDateTime searchStartDate(Iterator<Row> rowIterator) {
         while (rowIterator.hasNext()) {
             if(row == null) {
                 row = rowIterator.next();
+                rowNumber=1;
             }
             Cell cell = row.getCell(0);
 
@@ -459,11 +436,15 @@ public class OldReader {
                 }
             }
             row = rowIterator.next();
+            rowNumber++;
         }
         return null;
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
+
+
+
         OldReader oldReader = new OldReader("EDT S5 STRI 1A L3 2024-2025.xlsx", 0);
         //L3 : OldReader oldReader = new OldReader("EDT S5 STRI 1A L3 2024-2025.xlsx", 0);
         //M1 : OldReader oldReader = new OldReader("2024-2025 M1.xlsx", 0);

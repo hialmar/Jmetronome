@@ -20,8 +20,6 @@ public class OldReader {
     private Row row;
     private ZonedDateTime date;
     private Semaine semaine;
-    private int numeroSemaine;
-    private final XSSFWorkbook workbook;
 
     private final ColorReader colorReader;
 
@@ -31,13 +29,14 @@ public class OldReader {
     public OldReader(String fileName, int sheetNumber) throws Exception {
         calendar = new Calendrier();
         fis = new FileInputStream(fileName);
-        workbook = new XSSFWorkbook(fis);
+        XSSFWorkbook workbook = new XSSFWorkbook(fis);
         sheet = workbook.getSheetAt(sheetNumber);
         colorReader = new ColorReader(fileName, sheetNumber);
     }
 
-    public void close() throws IOException {
+    public void close() throws IOException, InterruptedException {
         fis.close();
+        colorReader.close();
     }
 
     public Calendrier traiterFichier() {
@@ -59,7 +58,7 @@ public class OldReader {
     }
 
     private Semaine recupSemaine(Iterator<Row> rowIterator) {
-        numeroSemaine = 0;
+        int numeroSemaine;
         // le numéro de semaine est au-dessus et à droite
         var cell = sheet.getRow(row.getRowNum()-1).getCell(1);
 
@@ -139,18 +138,15 @@ public class OldReader {
             jour = new Jour(date);
 
             // recup cours
-            boolean parallele = false;
             for(int colCours : debutsCours) {
                 colNumber = colCours+1;
                 Cours cours = recupCours(colCours, false);
                 if (cours != null) {
-                    if (cours.isEnParallele())
-                        parallele = true;
                     jour.addCours(cours);
                 }
             }
 
-            //if (parallele) {
+
                 // recherche groupe 2
                 this.row = sheet.getRow(row.getRowNum()+1);
                 this.rowNumber++;
@@ -164,7 +160,7 @@ public class OldReader {
                     }
                 }
                 this.rowNumber--;
-            //}
+
         }
         return jour;
     }
@@ -181,6 +177,11 @@ public class OldReader {
                 (hasLeftBorder(cellIntitule) || hasRightBorder(prevCell)))
         {
             String intitule = cellIntitule.getStringCellValue();
+
+            if (intitule.length()==1) { // only 1 character (bug copy/paste from Google)
+                System.out.println(intitule);
+                return null;
+            }
 
             cours = new Cours(intitule);
 
@@ -375,7 +376,7 @@ public class OldReader {
         }
     }
 
-    private void gestionTypeCours(String intitule, Cours cours, Cell cellIntitule) {
+    private void gestionTypeCours(String intitule, Cours cours, Cell ignoredCellIntitule) {
         if (intitule.contains(" C"))
             cours.setType(TypeCours.TYPE_COURS);
         else if (intitule.contains(" TD"))
@@ -467,13 +468,16 @@ public class OldReader {
     }
 
     public static void main(String[] args) throws Exception {
+        OldReader oldReader;
 
-
-
-        OldReader oldReader = new OldReader("2024-2025 Master.xlsx", 1);
-        //L3 : OldReader oldReader = new OldReader("EDT S5 STRI 1A L3 2024-2025.xlsx", 0);
-        //M1 : OldReader oldReader = new OldReader("2024-2025 M1.xlsx", 0);
-        //M2 : OldReader oldReader = new OldReader("2024-2025 Master.xlsx", 1);
+        int level = 4;
+        oldReader = switch (level) {
+            case 3 -> // L3
+                    new OldReader("EDT S5 STRI 1A L3 2024-2025.xlsx", 0);
+            case 4 -> // M1
+                    new OldReader("2024-2025 M1.xlsx", 0); // M2
+            default -> new OldReader("2024-2025 Master.xlsx", 1);
+        };
 
         Calendrier calendrier = oldReader.traiterFichier();
 

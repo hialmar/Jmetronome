@@ -2,14 +2,11 @@ package net.torguet.xlsx.old;
 
 import net.torguet.cal.*;
 import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.model.StylesTable;
-import org.apache.poi.xssf.model.ThemesTable;
 import org.apache.poi.xssf.usermodel.*;
 
 import java.io.*;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.Iterator;
 
 import static org.apache.poi.ss.usermodel.CellType.*;
@@ -24,7 +21,7 @@ public class OldReader {
     private ZonedDateTime date;
     private Semaine semaine;
     private int numeroSemaine;
-    private XSSFWorkbook workbook;
+    private final XSSFWorkbook workbook;
 
     private final ColorReader colorReader;
 
@@ -36,7 +33,7 @@ public class OldReader {
         fis = new FileInputStream(fileName);
         workbook = new XSSFWorkbook(fis);
         sheet = workbook.getSheetAt(sheetNumber);
-        colorReader = new ColorReader(fileName);
+        colorReader = new ColorReader(fileName, sheetNumber);
     }
 
     public void close() throws IOException {
@@ -111,8 +108,8 @@ public class OldReader {
         return semaine;
     }
 
-    private final int [] heuresDebut = {745, 800, 900, 1000, 1300, 1330, 1545, 1615, 1800};
-    private final int [] debutsCours = {2, 3, 7, 11, 23, 25, 34, 36, 43};
+    private final int [] heuresDebut = {745, 800, 845, 900, 1000, 1300, 1330, 1545, 1615, 1800};
+    private final int [] debutsCours = {2, 3, 6, 7, 11, 23, 25, 34, 36, 43};
 
     private int debutCoursToHeuresDebut(int debut) {
         for(int i = 0; i < debutsCours.length; i++) {
@@ -156,6 +153,7 @@ public class OldReader {
             //if (parallele) {
                 // recherche groupe 2
                 this.row = sheet.getRow(row.getRowNum()+1);
+                this.rowNumber++;
 
                 for(int colCours : debutsCours) {
                     colNumber = colCours+1;
@@ -165,6 +163,7 @@ public class OldReader {
                             jour.addCours(cours);
                     }
                 }
+                this.rowNumber--;
             //}
         }
         return jour;
@@ -272,7 +271,7 @@ public class OldReader {
             var cellFin = this.row.getCell(colFinCours);
             var nextCell = this.row.getCell(colFinCours+1);
 
-            if (cellFin != null && (hasRightBorder(cellFin) || hasLeftBorder(nextCell)))
+            if (cellFin != null && nextCell != null && (hasRightBorder(cellFin) || hasLeftBorder(nextCell)))
             {
                 fini = true;
                 int duree = colFinCours + 1 - colCours;
@@ -394,12 +393,38 @@ public class OldReader {
 
             switch (couleur) {
                 case "FFFFC000": // Ingé
+                case "9": // Ingé autre tinte de vert :(
+                case "7": // Ingé M1
                     cours.setType(TypeCours.TYPE_INGE);
                     break;
-
+                case "FF92D050": // L3 IRT
+                    cours.setType(TypeCours.TYPE_IRT);
+                    break;
+                case "FFFF85FE": // Alternance M1
+                    cours.setType(TypeCours.TYPE_ALTERNANCE);
+                    break;
+                case "8": // Non alts M1
+                    cours.setType(TypeCours.TYPE_NONALT);
+                    break;
+                case "FFFFFF00": // Contrôle
+                    cours.setType(TypeCours.TYPE_CONTROLE);
+                    break;
+                case "FFFF0000":
+                    cours.setType(TypeCours.TYPE_PROBLEME);
+                    break;
+                case "FF00FA00":
+                    cours.setType(TypeCours.TYPE_BE);
+                    break;
+                case "FF00FFFF": // dev durable M1/M2
+                case "FFFF40FF": // M1 RT
+                case "FFFFFFFF": // blanc
+                    cours.setType(TypeCours.TYPE_AUTRE);
+                    break;
+                default:
+                    cours.setType(TypeCours.TYPE_AUTRE);
+                    System.err.println("WARNING Nouvelle Couleur pour " + intitule + " : " + couleur);
             }
             System.out.println("Couleur de " + intitule + " : " + couleur);
-            cours.setType(TypeCours.TYPE_CONTROLE);
         }
 
 
@@ -445,7 +470,7 @@ public class OldReader {
 
 
 
-        OldReader oldReader = new OldReader("EDT S5 STRI 1A L3 2024-2025.xlsx", 0);
+        OldReader oldReader = new OldReader("2024-2025 Master.xlsx", 1);
         //L3 : OldReader oldReader = new OldReader("EDT S5 STRI 1A L3 2024-2025.xlsx", 0);
         //M1 : OldReader oldReader = new OldReader("2024-2025 M1.xlsx", 0);
         //M2 : OldReader oldReader = new OldReader("2024-2025 Master.xlsx", 1);

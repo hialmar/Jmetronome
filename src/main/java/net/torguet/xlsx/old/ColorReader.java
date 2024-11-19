@@ -11,7 +11,7 @@ public class ColorReader {
     private final PrintStream colorPS;
     private final BufferedReader colorBF;
 
-    public ColorReader(String filename) throws Exception {
+    public ColorReader(String filename, int sheetNumber) throws Exception {
         Process venv = Runtime.getRuntime().exec("/opt/homebrew/bin/python3.12 -m venv ./venv");
         venv.waitFor();
 
@@ -22,7 +22,8 @@ public class ColorReader {
         ArrayList<String> list = new ArrayList<>();
         list.add("./venv/bin/python3.12");
         list.add("colorReader.py");
-        list.add("EDT S5 STRI 1A L3 2024-2025.xlsx");
+        list.add(filename);
+        list.add(""+sheetNumber);
         ProcessBuilder pb = new ProcessBuilder(list);
         pb.redirectErrorStream(true);
 

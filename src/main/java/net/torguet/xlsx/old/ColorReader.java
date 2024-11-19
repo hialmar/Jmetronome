@@ -12,19 +12,33 @@ public class ColorReader {
     private final BufferedReader colorBF;
 
     public ColorReader(String filename, int sheetNumber) throws Exception {
-        Process venv = Runtime.getRuntime().exec("/opt/homebrew/bin/python3.12 -m venv ./venv");
+        ArrayList<String> list = new ArrayList<>();
+        list.add("python3");
+        list.add("-m");
+        list.add("venv");
+        list.add("./venv");
+        ProcessBuilder pb = new ProcessBuilder(list);
+        pb.redirectErrorStream(true);
+        Process venv = pb.start(); // Runtime.getRuntime().exec("/opt/homebrew/bin/python3.12 -m venv ./venv");
         venv.waitFor();
 
-        Process pip = Runtime.getRuntime().exec("./venv/bin/python3.12 -m pip install openpyxl");
+        list.clear();
+        list.add("./venv/bin/python3");
+        list.add("-m");
+        list.add("pip");
+        list.add("install");
+        list.add("openpyxl");
+        pb = new ProcessBuilder(list);
+        pb.redirectErrorStream(true);
+        Process pip = pb.start(); // Runtime.getRuntime().exec("./venv/bin/python3.12 -m pip install openpyxl");
         pip.waitFor();
 
-
-        ArrayList<String> list = new ArrayList<>();
-        list.add("./venv/bin/python3.12");
+        list.clear();
+        list.add("./venv/bin/python3");
         list.add("colorReader.py");
         list.add(filename);
         list.add(""+sheetNumber);
-        ProcessBuilder pb = new ProcessBuilder(list);
+        pb = new ProcessBuilder(list);
         pb.redirectErrorStream(true);
 
         colorReader = pb.start();
@@ -36,20 +50,20 @@ public class ColorReader {
     }
 
     public String getColor(int row, int col) {
-        colorPS.println(""+row+" "+col);
+        colorPS.println(row+" "+col);
         colorPS.flush();
 
         try {
-            String line = colorBF.readLine();
-            return line;
+            return colorBF.readLine();
         } catch (IOException e) {
             return null;
         }
     }
 
-    public void close() {
+    public void close() throws InterruptedException {
         colorPS.println("FIN");
         colorPS.flush();
+        colorReader.waitFor();
     }
 
 }

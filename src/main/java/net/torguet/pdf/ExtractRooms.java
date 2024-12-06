@@ -23,6 +23,7 @@ import net.torguet.pdf.structure.Element;
 import net.torguet.pdf.structure.Horaire;
 import net.torguet.pdf.structure.JourSemaine;
 import net.torguet.xlsx.old.OldReader;
+import net.torguet.xlsx.old.OldWriter;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -87,13 +88,17 @@ public class ExtractRooms extends PDFTextStripper
 
         try (PDDocument document = Loader.loadPDF(new File("edt_3A_2024_05_28.pdf")))
         {
-            PDFTextStripper stripper = new ExtractRooms(calendrier);
+            ExtractRooms extractRooms = new ExtractRooms(calendrier);
+            PDFTextStripper stripper = extractRooms;
             stripper.setSortByPosition( true );
             stripper.setStartPage( 3 ); // 0 );
             stripper.setEndPage( 3 ); // document.getNumberOfPages() );
 
             Writer dummy = new OutputStreamWriter(new ByteArrayOutputStream());
             stripper.writeText(document, dummy);
+
+            OldWriter oldWriter = new OldWriter(calendrier);
+            oldWriter.generate(new File("EDTAvecSalles.xlsx"));
         }
     }
 

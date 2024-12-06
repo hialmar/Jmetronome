@@ -4,18 +4,37 @@ import java.util.HashMap;
 
 public class StatisticsGenerator {
     private final Calendrier calendar;
+    private final HashMap<String, Float> heuresCours = new HashMap<>();
+    private final HashMap<String, Float> heuresTD = new HashMap<>();
+    private final HashMap<String, Float> heuresTP = new HashMap<>();
+    private final HashMap<String, Float> heuresAutres = new HashMap<>();
+    private final HashMap<String, Float> heuresControle = new HashMap<>();
 
     public StatisticsGenerator(Calendrier calendar) {
         this.calendar = calendar;
     }
 
-    public void generate() {
-        HashMap<String, Float> heuresCours = new HashMap<>();
-        HashMap<String, Float> heuresTD = new HashMap<>();
-        HashMap<String, Float> heuresTP = new HashMap<>();
-        HashMap<String, Float> heuresAutres = new HashMap<>();
-        HashMap<String, Float> heuresControle = new HashMap<>();
+    public HashMap<String, Float> getHeuresCours() {
+        return heuresCours;
+    }
 
+    public HashMap<String, Float> getHeuresTD() {
+        return heuresTD;
+    }
+
+    public HashMap<String, Float> getHeuresTP() {
+        return heuresTP;
+    }
+
+    public HashMap<String, Float> getHeuresAutres() {
+        return heuresAutres;
+    }
+
+    public HashMap<String, Float> getHeuresControle() {
+        return heuresControle;
+    }
+
+    public void generate() {
         for(Semaine semaine : calendar.getSemaines()) {
             if (semaine == null)
                 break;

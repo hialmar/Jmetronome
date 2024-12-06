@@ -5,7 +5,6 @@ import net.torguet.cal.Cours;
 import net.torguet.cal.Jour;
 import net.torguet.cal.Semaine;
 import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.*;
 
 import java.io.File;
@@ -198,17 +197,17 @@ public class OldWriter {
     private void generateSemaineDebut(Semaine semaine) {
         XSSFRow row = spreadsheet.createRow(currentRowNumber++);
         int cellNumber = 1;
-        XSSFCell cell = (XSSFCell) row.createCell(cellNumber++);
+        XSSFCell cell = row.createCell(cellNumber++);
         int numSemaine = semaine.getSemaine();
         cell.setCellValue(numSemaine);
         XSSFCellStyle style = workbook.createCellStyle();
         //style.setAlignment(HorizontalAlignment.FILL);
         for (int i = 745; i < 2000; i+=15) {
             if (i%100==60) i += 40;
-            cell = (XSSFCell) row.createCell(cellNumber++);
+            cell = row.createCell(cellNumber++);
             cell.setCellStyle(style);
             if(i%100 == 0) {
-                cell.setCellValue(""+i/100+"h");
+                cell.setCellValue(i/100+"h");
             } else {
                 // style
             }
@@ -217,7 +216,16 @@ public class OldWriter {
 
 
     public static void main(String[] args)throws Exception {
-        OldReader oldReader = new OldReader("EDT S5 STRI 1A L3 2024-2025.xlsx", 0);
+        OldReader oldReader;
+
+        int level = 5;
+        oldReader = switch (level) {
+            case 3 -> // L3
+                    new OldReader("EDT S5 STRI 1A L3 2024-2025.xlsx", 0);
+            case 4 -> // M1
+                    new OldReader("2024-2025 M1.xlsx", 0); // M2
+            default -> new OldReader("2024-2025 Master.xlsx", 1);
+        };
 
         Calendrier calendrier = oldReader.traiterFichier();
 

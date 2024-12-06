@@ -470,7 +470,7 @@ public class OldReader {
     public static void main(String[] args) throws Exception {
         OldReader oldReader;
 
-        int level = 4;
+        int level = 5;
         oldReader = switch (level) {
             case 3 -> // L3
                     new OldReader("EDT S5 STRI 1A L3 2024-2025.xlsx", 0);
@@ -486,5 +486,9 @@ public class OldReader {
         ICSGenerator generator = new ICSGenerator(calendrier);
 
         generator.generate();
+
+        StatisticsGenerator statisticsGenerator = new StatisticsGenerator(calendrier);
+
+        statisticsGenerator.generate();
     }
 }

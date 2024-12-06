@@ -261,17 +261,29 @@ public class ExtractRooms extends PDFTextStripper
                 long minuteFin = fin.getMinute();
                 float hFin = heureFin + minuteFin / 60.0f;
                 System.out.println("Heure fin : "+hFin);
-
+                boolean trouve = false;
                 for(var e : js.getElements()) {
                     if (e.isAmphi() || e.isSalle()) {
                         for (var h : e.getHoraires()) {
                             float hH = h.getHeures() + h.getMinutes() / 60.0f;
                             // System.out.println("Horaire "+hH);
                             if (hH >= hDebut && hH <= hFin) {
+                                trouve = true;
                                 System.out.println("Salle trouvée : "+e.getSalleCours());
+                                if (cours.getSalle() == null) {
+                                    cours.setSalle(e.getSalleCours());
+                                    break;
+                                }
                             }
                         }
+                        if (trouve) {
+                            break;
+                        }
                     }
+                }
+
+                if (!trouve) {
+                    System.err.println("Pas de salle trouvée pour le cours : "+cours);
                 }
             }
         }

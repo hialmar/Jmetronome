@@ -21,8 +21,12 @@ public class StatsWriter {
     }
 
     public void generate(File file) throws IOException {
+        this.generate(file, null, true);
+    }
+
+    public void generate(File file, Cours matcher, boolean matchAny) throws IOException {
         StatisticsGenerator statisticsGenerator = new StatisticsGenerator(calendrier);
-        statisticsGenerator.generate();
+        statisticsGenerator.generate(matcher, matchAny);
 
         var heuresCours = statisticsGenerator.getHeuresCours();
         var heuresTD = statisticsGenerator.getHeuresTD();

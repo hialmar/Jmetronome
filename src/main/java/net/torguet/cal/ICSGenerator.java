@@ -16,18 +16,25 @@ public class ICSGenerator {
     }
 
     public void generate() throws FileNotFoundException {
+        this.generate(null, true);
+    }
+
+    public void generate(Cours matcher, boolean matchAny) throws FileNotFoundException {
         Calendar copyCalendar = new Calendar();
         //TzId tzParam = new TzId(TimeZoneRegistry.getGlobalZoneId("Europe/Paris").getId());
 
         for(Semaine semaine : calendar.getSemaines()) {
             if (semaine == null)
-                break;
+                continue;
             for(Jour jour : semaine.getJours()) {
                 if (jour == null)
-                    break;
+                    continue;
                 for (Cours cours : jour.getCours()) {
                     if (cours == null)
-                        break;
+                        continue;
+                    if (!cours.match(matcher, matchAny)) {
+                        continue;
+                    }
                     ZonedDateTime start = cours.getDebut();
                     ZonedDateTime end = start.plusHours((long)cours.getDuree());
                     System.out.println(end);

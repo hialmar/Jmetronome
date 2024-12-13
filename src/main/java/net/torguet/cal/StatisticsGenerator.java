@@ -34,16 +34,19 @@ public class StatisticsGenerator {
         return heuresControle;
     }
 
-    public void generate() {
+    public void generate(Cours matcher, boolean matchAny) {
         for(Semaine semaine : calendar.getSemaines()) {
             if (semaine == null)
-                break;
+                continue;
             for(Jour jour : semaine.getJours()) {
                 if (jour == null)
-                    break;
+                    continue;
                 for (Cours cours : jour.getCours()) {
                     if (cours == null)
-                        break;
+                        continue;
+                    if (!cours.match(matcher, matchAny)) {
+                        continue;
+                    }
                     String enseignant = cours.getEnseignant();
                     if (enseignant == null) {
                         enseignant = "ZZAnonyme";

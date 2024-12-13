@@ -489,6 +489,6 @@ public class OldReader {
 
         StatisticsGenerator statisticsGenerator = new StatisticsGenerator(calendrier);
 
-        statisticsGenerator.generate();
+        statisticsGenerator.generate(null, true);
     }
 }

@@ -16,10 +16,10 @@ public class ICSGenerator {
     }
 
     public void generate() throws FileNotFoundException {
-        this.generate(null, true);
+        this.generate(null, true, "test.ics");
     }
 
-    public void generate(Cours matcher, boolean matchAny) throws FileNotFoundException {
+    public void generate(Cours matcher, boolean matchAny, String fileName) throws FileNotFoundException {
         Calendar copyCalendar = new Calendar();
         //TzId tzParam = new TzId(TimeZoneRegistry.getGlobalZoneId("Europe/Paris").getId());
 
@@ -52,7 +52,7 @@ public class ICSGenerator {
 
         System.out.println(copyCalendar);
 
-        PrintStream ps = new PrintStream(new FileOutputStream("test.ics"));
+        PrintStream ps = new PrintStream(new FileOutputStream(fileName));
 
         //write operation workbook using file out object
         ps.println(copyCalendar);

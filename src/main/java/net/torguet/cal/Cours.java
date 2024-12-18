@@ -4,6 +4,7 @@ import java.time.ZonedDateTime;
 
 public class Cours {
     private String intitule;
+    private String codeApogee;
     private String enseignant;
     private TypeCours type;
     private ZonedDateTime debut;
@@ -84,6 +85,14 @@ public class Cours {
         this.groupe = groupe;
     }
 
+    public String getCodeApogee() {
+        return codeApogee;
+    }
+
+    public void setCodeApogee(String codeApogee) {
+        this.codeApogee = codeApogee;
+    }
+
     /**
      * Vérifie si le cours courant matche avec le cours exemple
      * @param cours le cours exemple, si null ou vide matche toujours
@@ -97,6 +106,15 @@ public class Cours {
         boolean result = true;
         if (this.intitule != null && cours.getIntitule() != null) {
             if (this.intitule.contains(cours.getIntitule())) {
+                if (matchAny) {
+                    return true;
+                }
+            } else {
+                result = false;
+            }
+        }
+        if (this.codeApogee != null && cours.codeApogee != null) {
+            if (this.codeApogee.contains(cours.codeApogee)) {
                 if (matchAny) {
                     return true;
                 }
@@ -168,6 +186,7 @@ public class Cours {
                 (type == TypeCours.TYPE_IRT ? "L3 IRT " : "") +
                 (type == TypeCours.TYPE_ALTERNANCE ? "ALT " : "") +
                 intitule +
+                (codeApogee != null ? ", code : " + codeApogee : "") +
                 (enseignant != null ? ", ens : " + enseignant : "") +
                 (groupe != null ? ", grp : " + groupe : "") +
                 (salle != null ? ", salle : " + salle : "");

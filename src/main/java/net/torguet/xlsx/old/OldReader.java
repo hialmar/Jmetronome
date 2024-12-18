@@ -8,6 +8,7 @@ import java.io.*;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Iterator;
+import java.util.Scanner;
 
 import static org.apache.poi.ss.usermodel.CellType.*;
 
@@ -483,12 +484,87 @@ public class OldReader {
 
         oldReader.close();
 
-        ICSGenerator generator = new ICSGenerator(calendrier);
 
-        generator.generate();
 
-        StatisticsGenerator statisticsGenerator = new StatisticsGenerator(calendrier);
 
-        statisticsGenerator.generate(null, true);
+        Scanner scanner = new Scanner(System.in);
+
+        Cours matcher = new Cours(null);
+        boolean matchAny = true;
+        boolean numSemaines = true;
+        boolean joursSemaine = true;
+        int i = 0;
+
+        while(true) {
+            System.out.println("0 - fin");
+            System.out.println("1 - tout");
+            System.out.println("2 - intitulé");
+            System.out.println("3 - enseignant");
+            System.out.println("4 - groupe");
+            System.out.println("5 - type");
+            System.out.println("6 - switch matchAny : "+matchAny);
+            System.out.println("7 - switch affiche numSemaines : "+numSemaines);
+            System.out.println("8 - switch affiche joursSemaine : "+joursSemaine);
+            System.out.println("Votre choix :");
+            int choice = scanner.nextInt();
+            scanner.nextLine();
+            switch(choice) {
+                case 0 -> {
+                    return;
+                }
+                case 1 -> {
+                    matcher = new Cours(null);
+                }
+                case 2 -> {
+                    System.out.println("Intitulé :");
+                    String intitule = scanner.nextLine();
+                    matcher.setIntitule(intitule);
+                }
+                case 3 -> {
+                    System.out.println("Enseignant :");
+                    String enseignant = scanner.nextLine();
+                    matcher.setEnseignant(enseignant);
+                }
+                case 4 -> {
+                    System.out.println("Groupe :");
+                    String groupe = scanner.nextLine();
+                    matcher.setGroupe(groupe);
+                }
+                case 5 -> {
+                    System.out.println("Types :");
+                    for(TypeCours typeCours : TypeCours.values()) {
+                        System.out.println(typeCours.toString());
+                    }
+                    System.out.println("Votre choix :");
+                    String type = scanner.nextLine();
+                    matcher.setType(TypeCours.valueOf(type));
+                }
+                case 6 -> {
+                    matchAny = !matchAny;
+                    System.out.println("Switch matchAny maintenant : "+matchAny);
+                }
+                case 7 -> {
+                    numSemaines = !numSemaines;
+                    System.out.println("Switch numSemaines maintenant : "+numSemaines);
+                }
+                case 8 -> {
+                    joursSemaine = !joursSemaine;
+                    System.out.println("Switch joursSemaine maintenant : "+joursSemaine);
+                }
+                default -> {
+                    System.out.println("Choix non valide");
+                }
+            }
+            System.out.println("Matcher " + matcher);
+
+            ICSGenerator generator = new ICSGenerator(calendrier);
+
+            generator.generate(matcher, matchAny, "cal"+i+".ics");
+
+            StatisticsGenerator statisticsGenerator = new StatisticsGenerator(calendrier);
+
+            statisticsGenerator.generate(matcher, matchAny);
+            i++;
+        }
     }
 }

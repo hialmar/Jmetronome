@@ -66,6 +66,8 @@ public class ListWriter {
         XSSFCell cell = row.createCell(startCell++);
         cell.setCellValue(cours.getIntitule());
         cell = row.createCell(startCell++);
+        cell.setCellValue(cours.getCodeApogee());
+        cell = row.createCell(startCell++);
         cell.setCellValue(cours.getEnseignant());
         cell = row.createCell(startCell++);
 

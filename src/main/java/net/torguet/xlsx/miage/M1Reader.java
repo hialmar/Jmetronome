@@ -21,9 +21,13 @@ public class M1Reader {
 
     private Row[] rows;
 
-    private int[] debutCours = new int[6];
-    private int[] debutTD = new int[4];
-    private int[] debutTP = new int[4];
+    private final int[] debutCours = new int[6];
+    private final int[] debutCoursHoraires = new int[6];
+    private int nbDebutCours = 0;
+    private int[] debutTD = new int[6];
+    private String[] groupeTDNames = new String[6];
+    private int[] debutTP = new int[6];
+    private String[] groupeTPNames = new String[6];
     private int nbGroupesTD = 0;
     private int nbGroupesTP = 0;
 
@@ -58,9 +62,11 @@ public class M1Reader {
             rows[i] = rowIterator.next();
         }
 
-        calculInfoLignes();
+        calculInfoHoraires();
+        calculGroupesTDs();
+        calculGroupesTPs();
 
-        colNumber = 0;
+        colNumber = 3;
         date = searchStartDate();
         if (date != null) {
             calendar.setStartDate(date);
@@ -69,67 +75,141 @@ public class M1Reader {
                 if (semaine != null) {
                     calendar.addSemaine(semaine);
                 }
+                colNumber++;
             } while (semaine != null);
         }
         return calendar;
     }
 
+    private void calculGroupesTDs() {
+        colNumber = 1;
+        rowNumber = debutCours[0];
+        int idxTD = 0;
+        var cell = sheet.getRow(rowNumber).getCell(colNumber);
+        while (cell != null && cell.getCellType() == STRING) {
+            var value = cell.getStringCellValue();
+            if (value != null && value.startsWith("TD")) {
+                System.out.println("Groupe "+value);
+                debutTD[idxTD] = rowNumber - debutCours[0];
+                groupeTDNames[idxTD] = value;
+                nbGroupesTD++;
+                idxTD++;
+                rowNumber++;
+                cell = sheet.getRow(rowNumber).getCell(colNumber);
+            } else {
+                break;
+            }
+        }
+        System.out.println("Nb TDs "+nbGroupesTD);
+    }
+
+    private void calculGroupesTPs() {
+        colNumber = 2;
+        rowNumber = debutCours[0];
+        int idxTD = 0;
+        var cell = sheet.getRow(rowNumber).getCell(colNumber);
+        while (cell != null && cell.getCellType() == STRING) {
+            var value = cell.getStringCellValue();
+            if (value != null && value.startsWith("TP")) {
+                System.out.println("Groupe "+value);
+                // si on retrouve le premier groupe on a fini
+                if (nbGroupesTP>0 && value.equalsIgnoreCase(groupeTPNames[0])) {
+                    break;
+                }
+                debutTP[idxTD] = rowNumber - debutCours[0];
+                groupeTPNames[idxTD] = value;
+                nbGroupesTP++;
+                idxTD++;
+                rowNumber++;
+                cell = sheet.getRow(rowNumber).getCell(colNumber);
+            } else {
+                break;
+            }
+        }
+        System.out.println("Nb TPs "+nbGroupesTP);
+    }
+
     private static final String [] joursSemaine = {"LUNDI", "MAR", "MER", "JEU", "VEN"};
 
-    private static final String timeMatcher = "^([0-9]{1,})h([0-9]*)";
+    private static final String timeMatcher = "^([0-9]+)h([0-9]*)";
 
-    private void calculInfoLignes() {
+    private void calculInfoHoraires() {
         colNumber = 0;
         rowNumber = 2;
-        for (String jourSemaine : joursSemaine) {
-            var cell = sheet.getRow(rowNumber).getCell(colNumber);
-
-            if (cell != null && cell.getCellType() == STRING) {
-                String value = cell.getStringCellValue();
-                while (!value.equalsIgnoreCase(jourSemaine)) {
-                    cell = sheet.getRow(rowNumber).getCell(colNumber);
-                    if (cell != null && cell.getCellType() == STRING) {
-                        value = cell.getStringCellValue();
-                    }
-                    rowNumber++;
-                }
-            }
+        int idJour = 0;
+        while(idJour < joursSemaine.length) {
+            chercheJourSemaine(idJour);
+            XSSFCell cell;
 
             int debutCoursIdx = 0;
 
-            if (jourSemaine.equals("LUNDI")) {
-                System.out.println("LUNDI");
-                rowNumber++;
+            System.out.println(joursSemaine[idJour]);
+
+            if (idJour == 0) {
                 // horaires cours
                 cell = sheet.getRow(rowNumber).getCell(colNumber);
                 while (cell != null && cell.getCellType() == STRING) {
-                    String value = cell.getStringCellValue();
-                    while (!value.matches(timeMatcher)) {
-                        cell = sheet.getRow(rowNumber).getCell(colNumber);
-                        if (cell != null && cell.getCellType() == STRING) {
-                            value = cell.getStringCellValue();
-                        }
-                        rowNumber++;
-                    }
-                    System.out.println("LUNDI " + value);
+                    String value = chercheHoraire(cell);
                     debutCours[debutCoursIdx] = rowNumber-1;
+                    int idxH = value.indexOf("h");
+                    int heure = 0;
+                    int minute = 0;
+                    if (idxH != -1) {
+                        heure = Integer.parseInt(value.substring(0, idxH));
+                    }
+                    if (idxH > value.length()) {
+                        minute = Integer.parseInt(value.substring(idxH+1));
+                    }
+                    debutCoursHoraires[debutCoursIdx] = heure*100+minute;
                     System.out.println(debutCours[debutCoursIdx]);
                     debutCoursIdx++;
-
                     rowNumber++;
-                    cell = sheet.getRow(rowNumber).getCell(colNumber);
-
-                    while (cell != null && cell.getCellType() != STRING) {
-                        rowNumber++;
-                        cell = sheet.getRow(rowNumber).getCell(colNumber);
+                    cell = sauteCaseVide();
+                    if (cell.getStringCellValue().equalsIgnoreCase(joursSemaine[idJour+1])) {
+                        nbDebutCours = debutCoursIdx-1;
+                        break;
                     }
                 }
-
             }
-
-
-
+            idJour++;
         }
+    }
+
+    private void chercheJourSemaine(int idJour) {
+        var cell = sheet.getRow(rowNumber).getCell(colNumber);
+        if (cell != null && cell.getCellType() == STRING) {
+            String value = cell.getStringCellValue();
+            while (!value.equalsIgnoreCase(joursSemaine[idJour])) {
+                cell = sheet.getRow(rowNumber).getCell(colNumber);
+                if (cell != null && cell.getCellType() == STRING) {
+                    value = cell.getStringCellValue();
+                }
+                rowNumber++;
+            }
+        }
+    }
+
+    private XSSFCell sauteCaseVide() {
+        XSSFCell cell;
+        cell = sheet.getRow(rowNumber).getCell(colNumber);
+
+        while (cell != null && cell.getCellType() != STRING) {
+            rowNumber++;
+            cell = sheet.getRow(rowNumber).getCell(colNumber);
+        }
+        return cell;
+    }
+
+    private String chercheHoraire(XSSFCell cell) {
+        String value = cell.getStringCellValue();
+        while (!value.matches(timeMatcher)) {
+            cell = sheet.getRow(rowNumber).getCell(colNumber);
+            if (cell != null && cell.getCellType() == STRING) {
+                value = cell.getStringCellValue();
+            }
+            rowNumber++;
+        }
+        return value;
     }
 
     private Semaine recupSemaine() {
@@ -137,6 +217,10 @@ public class M1Reader {
         rowNumber=1;
         // le numéro de semaine est sur la ligne 1
         var cell = sheet.getRow(rowNumber).getCell(colNumber);
+
+        if (cell == null) {
+            return null;
+        }
 
         if(cell.getCellType() == NUMERIC || cell.getCellType() == FORMULA) {
             numeroSemaine = (int) cell.getNumericCellValue();
@@ -151,15 +235,15 @@ public class M1Reader {
             System.out.println("Semaine "+ cell.getNumericCellValue());
             int nbJour = 0;
             while (rowNumber < sheet.getPhysicalNumberOfRows()) {
-                Jour jour = recupJour();
+                date = date.plusDays(1);
+                System.out.println(date);
+                Jour jour = recupJour(nbJour);
                 if (jour != null) {
-                    date = date.plusDays(1);
-                    System.out.println(date);
                     semaine.addJour(jour);
-                    nbJour++;
-                    if(nbJour>=5) {
-                        break;
-                    }
+                }
+                nbJour++;
+                if(nbJour>=5) {
+                    break;
                 }
                 rowNumber++;
             }
@@ -172,69 +256,120 @@ public class M1Reader {
     }
 
 
-    private Jour recupJour() {
-        Jour jour = null;
-        var cell = rows[rowNumber].getCell(colNumber);
-        if (cell != null && cell.getCellType() == STRING) {
-            String jourSemaine  = cell.getStringCellValue();
-            System.out.println(jourSemaine);
-            jour = new Jour(date);
-
-            // recup cours
-            //for(int colCours : debutsCours) {
-                //colNumber = colCours+1;
-//                Cours cours = recupCours(colCours, false);
-//                if (cours != null) {
-//                    jour.addCours(cours);
-//                }
-            //}
-            this.rowNumber--;
+    private Jour recupJour(int nbJour) {
+        Jour jour = new Jour(date);
+        int nbCours = 0;
+        for(int coursIdx = 0; coursIdx <nbDebutCours ; coursIdx++) {
+            // créneau Cours ou TD1 ou TP1
+            rowNumber = debutCours[coursIdx];
+            var cell = sheet.getRow(rowNumber).getCell(colNumber);
+            if (cell != null && cell.getCellType() == STRING) {
+                Cours cours = recupCours(cell);
+                if (cours != null) {
+                    jour.addCours(cours);
+                    nbCours++;
+                }
+            }
+            if (nbGroupesTD > 1) {
+                for (int tdIdx=1; tdIdx<nbGroupesTD; tdIdx++) {
+                    nbCours = recupTDTP(jour, nbCours, coursIdx, tdIdx, debutTD);
+                }
+            }
+            if (nbGroupesTP>nbGroupesTD) {
+                for (int tpIdx=nbGroupesTD; tpIdx<nbGroupesTP; tpIdx++) {
+                    nbCours = recupTDTP(jour, nbCours, coursIdx, tpIdx, debutTP);
+                }
+            }
+        }
+        if (nbCours == 0) {
+            return null;
         }
         return jour;
     }
 
-    private Cours recupCours(int colCours, boolean bas) {
-        Cours cours = null;
-        System.out.println("recupInfosCours");
+    private int recupTDTP(Jour jour, int nbCours, int coursIdx, int tpIdx, int[] debutTP) {
+        XSSFCell cell;
+        rowNumber = debutCours[coursIdx]+ debutTP[tpIdx];
+        cell = sheet.getRow(rowNumber).getCell(colNumber);
+        if (cell != null && cell.getCellType() == STRING) {
+            Cours cours = recupCours(cell);
+            if (cours != null) {
+                jour.addCours(cours);
+                nbCours++;
+            }
+        }
+        return nbCours;
+    }
 
-        // intitulé cours
-//        var cellIntitule = row.getCell(colCours);
-//        var prevCell = row.getCell(colCours-1);
-//
-//        if (cellIntitule != null && cellIntitule.getCellType() == STRING &&
-//                (hasLeftBorder(cellIntitule) || hasRightBorder(prevCell)))
-//        {
-//            String intitule = cellIntitule.getStringCellValue();
-//
-//            if (intitule.length()==1) { // only 1 character (bug copy/paste from Google)
-//                System.out.println(intitule);
-//                return null;
-//            }
-//
-//            cours = new Cours(intitule);
-//
-//            System.out.println("minuit : "+date);
-//
-//            int heure = debutCoursToHeuresDebut(colCours);
-//            var d = date.plusHours(heure);
-//            int minutes = debutCoursToMinutesDebut(colCours);
-//            d = d.plusMinutes(minutes);
-//
-//            System.out.println("début cours : " + d);
-//
-//            cours.setDebut(d);
-//
-//            gestionTypeCours(intitule, cours, cellIntitule);
-//            gestionEnseignantEtSalle(colCours, cellIntitule, cours, intitule, bas);
-//        }
+    private Cours recupCours(XSSFCell cell) {
+        Cours cours = null;
+        System.out.println("recupCours");
+
+        String value = cell.getStringCellValue();
+
+        String [] split = value.split("[-\\n]");
+
+        if (split.length > 1) {
+            cours = new Cours(split[1]);
+            cours.setCodeApogee(split[0]);
+            if (split.length > 2) {
+                switch (split[2]) {
+                    case "Cours":
+                        cours.setType(TypeCours.TYPE_COURS);
+                        break;
+                    case "TD":
+                        cours.setType(TypeCours.TYPE_TD);
+                        break;
+                    case "TP":
+                        cours.setType(TypeCours.TYPE_TP);
+                        break;
+                    default:
+                        cours.setType(TypeCours.TYPE_AUTRE);
+                }
+            }
+            if (split.length > 3) {
+                cours.setEnseignant(split[3]);
+            }
+
+            // calcul horaire
+            for(int debutC = 0; debutC<nbDebutCours; debutC++) {
+                if (debutC == nbDebutCours-1) {
+                    setHoraireCours(debutC, cours);
+                }
+                else if (debutCours[debutC]<=rowNumber && debutCours[debutC+1]>rowNumber) {
+                    setHoraireCours(debutC, cours);
+                    break;
+                }
+            }
+        }
 
         System.out.println(cours);
 
         return cours;
     }
 
+    private void setHoraireCours(int debutC, Cours cours) {
+        System.out.println(debutCoursHoraires[debutC]);
+        ZonedDateTime dateCours = date.plusHours(debutCoursHoraires[debutC]/100);
+        dateCours = dateCours.plusMinutes(debutCoursHoraires[debutC +1]%100);
+        cours.setDebut(dateCours);
+        cours.setDuree(2.0f); // A Modifier !!!!
 
-
+        if(cours.getType()==TypeCours.TYPE_TD) {
+            for (int debTD = 0; debTD < nbGroupesTD; debTD++) {
+                if (debutCours[debutC]+debutTD[debTD]==rowNumber) {
+                    cours.setGroupe(groupeTDNames[debTD]);
+                }
+            }
+        }
+        if (cours.getType()==TypeCours.TYPE_TP) {
+            for (int debTP = 0; debTP < nbGroupesTP; debTP++) {
+                if (debutCours[debutC]+debutTP[debTP]==rowNumber) {
+                    cours.setGroupe(groupeTPNames[debTP]);
+                }
+            }
+        }
+    }
 
 
     private void gestionTypeCours(String intitule, Cours cours, Cell ignoredCellIntitule) {

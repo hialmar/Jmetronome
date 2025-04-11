@@ -2,6 +2,7 @@ package net.torguet.xlsx.list;
 
 import net.torguet.cal.*;
 import net.torguet.xlsx.old.OldReader;
+import net.torguet.xlsx.stats.StatsWriter;
 import org.apache.poi.xssf.usermodel.*;
 
 import java.io.File;
@@ -113,13 +114,15 @@ public class ListWriter {
     public static void main(String[] args)throws Exception {
         OldReader oldReader;
 
-        int level = 5;
+        int level = 6;
         oldReader = switch (level) {
             case 3 -> // L3
                     new OldReader("EDT S5 STRI 1A L3 2024-2025.xlsx", 0);
             case 4 -> // M1
-                    new OldReader("2024-2025 M1.xlsx", 0); // M2
-            default -> new OldReader("2024-2025 Master.xlsx", 1);
+                    new OldReader("2024-2025 M1.xlsx", 0);
+            // M2
+            case 5 -> new OldReader("2024-2025 Master.xlsx", 1);
+            default -> new OldReader("2025-2026 Celcat.xlsx", 1);
         };
 
 
@@ -127,6 +130,9 @@ public class ListWriter {
 
         oldReader.close();
 
+        StatsWriter statsWriter = new StatsWriter(calendrier);
+
+        statsWriter.generate(new File("stats.xlsx"));
 
         ListWriter listWriter = new ListWriter(calendrier);
 
@@ -136,6 +142,7 @@ public class ListWriter {
         boolean matchAny = true;
         boolean numSemaines = true;
         boolean joursSemaine = true;
+        boolean all = true;
         int i = 0;
 
         while(true) {
@@ -157,21 +164,25 @@ public class ListWriter {
                 }
                 case 1 -> {
                     matcher = new Cours(null);
+                    all = true;
                 }
                 case 2 -> {
                     System.out.println("Intitulé :");
                     String intitule = scanner.nextLine();
                     matcher.setIntitule(intitule);
+                    all = false;
                 }
                 case 3 -> {
                     System.out.println("Enseignant :");
                     String enseignant = scanner.nextLine();
                     matcher.setEnseignant(enseignant);
+                    all = false;
                 }
                 case 4 -> {
                     System.out.println("Groupe :");
                     String groupe = scanner.nextLine();
                     matcher.setGroupe(groupe);
+                    all = false;
                 }
                 case 5 -> {
                     System.out.println("Types :");
@@ -181,6 +192,7 @@ public class ListWriter {
                     System.out.println("Votre choix :");
                     String type = scanner.nextLine();
                     matcher.setType(TypeCours.valueOf(type));
+                    all = false;
                 }
                 case 6 -> {
                     matchAny = !matchAny;
@@ -199,7 +211,7 @@ public class ListWriter {
                 }
             }
             System.out.println("Matcher " + matcher);
-            listWriter.generate(new File("Liste"+i+".xlsx"), matcher, matchAny, numSemaines, joursSemaine);
+            listWriter.generate(new File("Liste"+i+".xlsx"), all?null:matcher, matchAny, numSemaines, joursSemaine);
             i++;
         }
 

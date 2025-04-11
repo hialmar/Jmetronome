@@ -108,8 +108,8 @@ public class OldReader {
         return semaine;
     }
 
-    private final int [] heuresDebut = {745, 800, 845, 900, 1000, 1300, 1330, 1545, 1615, 1800};
-    private final int [] debutsCours = {2, 3, 6, 7, 11, 23, 25, 34, 36, 43};
+    private final int [] heuresDebut = {745, 800, 845, 900, 1000, 1300, 1330, 1545, 1615, 1700, 1800};
+    private final int [] debutsCours = {2, 3, 6, 7, 11, 23, 25, 34, 36, 39, 43};
 
     private int debutCoursToHeuresDebut(int debut) {
         for(int i = 0; i < debutsCours.length; i++) {
@@ -185,6 +185,22 @@ public class OldReader {
             }
 
             cours = new Cours(intitule);
+
+            // Code apogée
+            int debutCode = intitule.indexOf('(');
+            if (debutCode != -1) {
+                int finCode = intitule.indexOf(')', debutCode);
+                if (finCode == -1) {
+                    finCode = intitule.length();
+                }
+
+                String code = intitule.substring(debutCode+1, finCode);
+
+                if (code.startsWith("KRT") || code.startsWith("EIRT")) {
+                    // c'est un code Apogée
+                    cours.setCodeApogee(code);
+                }
+            }
 
             System.out.println("minuit : "+date);
 
@@ -326,7 +342,25 @@ public class OldReader {
             }
 
             String enseignant = intitule.substring(debutEnseignant+1, finEnseignant);
-            cours.setEnseignant(enseignant);
+
+            if (enseignant.startsWith("KRT") || enseignant.startsWith("EIR")) {
+                // c'est un code Apogée
+                if (cours.getCodeApogee() == null)
+                    cours.setCodeApogee(enseignant);
+
+                // on recherche l'enseignant à nouveau
+                debutEnseignant = intitule.indexOf('(', finEnseignant);
+                if (debutEnseignant != -1) {
+                    finEnseignant = intitule.indexOf(')', debutEnseignant);
+                    if (finEnseignant == -1) {
+                        finEnseignant = intitule.length();
+                    }
+                    enseignant = intitule.substring(debutEnseignant+1, finEnseignant);
+                    cours.setEnseignant(enseignant);
+                }
+            } else {
+                cours.setEnseignant(enseignant);
+            }
         }
         // Recherche fin du cours
         boolean fini = false;
@@ -471,13 +505,15 @@ public class OldReader {
     public static void main(String[] args) throws Exception {
         OldReader oldReader;
 
-        int level = 5;
+        int level = 6;
         oldReader = switch (level) {
             case 3 -> // L3
                     new OldReader("EDT S5 STRI 1A L3 2024-2025.xlsx", 0);
             case 4 -> // M1
-                    new OldReader("2024-2025 M1.xlsx", 0); // M2
-            default -> new OldReader("2024-2025 Master.xlsx", 1);
+                    new OldReader("2024-2025 M1.xlsx", 0);
+            // M2
+            case 5 -> new OldReader("2024-2025 Master.xlsx", 1);
+            default -> new OldReader("2025-2026 Celcat.xlsx", 1);
         };
 
         Calendrier calendrier = oldReader.traiterFichier();

@@ -51,6 +51,10 @@ public class StatisticsGenerator {
                     if (enseignant == null) {
                         enseignant = "ZZAnonyme";
                     }
+                    String codeApogee = cours.getCodeApogee();
+                    if (codeApogee == null) {
+                        codeApogee = "ZZApogeeMissing";
+                    }
                     switch (cours.getType()) {
                         case TYPE_COURS -> {
                             if (!heuresCours.containsKey(enseignant))
@@ -58,6 +62,13 @@ public class StatisticsGenerator {
                             else {
                                 heuresCours.put(enseignant,
                                         heuresCours.get(enseignant)
+                                                + cours.getDuree());
+                            }
+                            if (!heuresCours.containsKey(codeApogee))
+                                heuresCours.put(codeApogee, cours.getDuree());
+                            else {
+                                heuresCours.put(codeApogee,
+                                        heuresCours.get(codeApogee)
                                                 + cours.getDuree());
                             }
                         }
@@ -69,6 +80,13 @@ public class StatisticsGenerator {
                                         heuresTD.get(enseignant)
                                                 + cours.getDuree());
                             }
+                            if (!heuresTD.containsKey(codeApogee))
+                                heuresTD.put(codeApogee, cours.getDuree());
+                            else {
+                                heuresTD.put(codeApogee,
+                                        heuresTD.get(codeApogee)
+                                                + cours.getDuree());
+                            }
                         }
                         case TYPE_TP -> {
                             if (!heuresTP.containsKey(enseignant))
@@ -76,6 +94,13 @@ public class StatisticsGenerator {
                             else {
                                 heuresTP.put(enseignant,
                                         heuresTP.get(enseignant)
+                                                + cours.getDuree());
+                            }
+                            if (!heuresTP.containsKey(codeApogee))
+                                heuresTP.put(codeApogee, cours.getDuree());
+                            else {
+                                heuresTP.put(codeApogee,
+                                        heuresTP.get(codeApogee)
                                                 + cours.getDuree());
                             }
                         }
@@ -87,6 +112,13 @@ public class StatisticsGenerator {
                                         heuresControle.get(enseignant)
                                                 + cours.getDuree());
                             }
+                            if (!heuresControle.containsKey(codeApogee))
+                                heuresControle.put(codeApogee, cours.getDuree());
+                            else {
+                                heuresControle.put(codeApogee,
+                                        heuresControle.get(codeApogee)
+                                                + cours.getDuree());
+                            }
                         }
                         default -> {
                             if (!heuresAutres.containsKey(enseignant))
@@ -94,6 +126,13 @@ public class StatisticsGenerator {
                             else {
                                 heuresAutres.put(enseignant,
                                         heuresAutres.get(enseignant)
+                                                + cours.getDuree());
+                            }
+                            if (!heuresAutres.containsKey(codeApogee))
+                                heuresAutres.put(codeApogee, cours.getDuree());
+                            else {
+                                heuresAutres.put(codeApogee,
+                                        heuresAutres.get(codeApogee)
                                                 + cours.getDuree());
                             }
                         }

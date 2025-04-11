@@ -104,11 +104,13 @@ public class Cours {
             return true;
         }
         boolean result = true;
+        int nbMatches = 0;
         if (this.intitule != null && cours.getIntitule() != null) {
             if (this.intitule.contains(cours.getIntitule())) {
                 if (matchAny) {
                     return true;
                 }
+                nbMatches++;
             } else {
                 result = false;
             }
@@ -118,6 +120,7 @@ public class Cours {
                 if (matchAny) {
                     return true;
                 }
+                nbMatches++;
             } else {
                 result = false;
             }
@@ -127,6 +130,7 @@ public class Cours {
                 if (matchAny) {
                     return true;
                 }
+                nbMatches++;
             } else {
                 result = false;
             }
@@ -136,6 +140,7 @@ public class Cours {
                 if (matchAny) {
                     return true;
                 }
+                nbMatches++;
             } else {
                 result = false;
             }
@@ -145,6 +150,7 @@ public class Cours {
                 if (matchAny) {
                     return true;
                 }
+                nbMatches++;
             } else {
                 result = false;
             }
@@ -154,6 +160,7 @@ public class Cours {
                 if (matchAny) {
                     return true;
                 }
+                nbMatches++;
             } else {
                 result = false;
             }
@@ -163,6 +170,7 @@ public class Cours {
                 if (matchAny) {
                     return true;
                 }
+                nbMatches++;
             } else {
                 result = false;
             }
@@ -172,11 +180,12 @@ public class Cours {
                 if (matchAny) {
                     return true;
                 }
+                nbMatches++;
             } else {
                 result = false;
             }
         }
-        return result;
+        return result && (nbMatches>0);
     }
 
     @Override

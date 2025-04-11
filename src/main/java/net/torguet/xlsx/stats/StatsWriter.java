@@ -179,13 +179,15 @@ public class StatsWriter {
     public static void main(String[] args)throws Exception {
         OldReader oldReader;
 
-        int level = 5;
+        int level = 6;
         oldReader = switch (level) {
             case 3 -> // L3
                     new OldReader("EDT S5 STRI 1A L3 2024-2025.xlsx", 0);
             case 4 -> // M1
-                    new OldReader("2024-2025 M1.xlsx", 0); // M2
-            default -> new OldReader("2024-2025 Master.xlsx", 1);
+                    new OldReader("2024-2025 M1.xlsx", 0);
+            // M2
+            case 5 -> new OldReader("2024-2025 Master.xlsx", 1);
+            default -> new OldReader("2025-2026 Celcat.xlsx", 1);
         };
 
         Calendrier calendrier = oldReader.traiterFichier();

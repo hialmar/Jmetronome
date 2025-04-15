@@ -46,8 +46,8 @@ class CoursTest {
         assertTrue(coursAA.match(matcher, false), "devrait matcher car code apogée partiel et reste null"); // le reste est null
 
         Cours matcher2 = new Cours(null);
-        assertTrue(coursAA.match(matcher2, true), "devrait matcher car matcher vide"); // matcher vide
-        assertTrue(coursAA.match(matcher2, false), "devrait matcher car matcher vide"); // matcher vide
+        assertFalse(coursAA.match(matcher2, true), "devrait ne pas matcher car matcher vide"); // matcher vide
+        assertFalse(coursAA.match(matcher2, false), "devrait ne pas matcher car matcher vide"); // matcher vide
 
         matcher2.setType(TypeCours.TYPE_COURS);
         assertTrue(coursAA.match(matcher2, true), "devrait matcher car type cours identique");

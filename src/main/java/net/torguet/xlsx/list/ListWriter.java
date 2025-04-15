@@ -1,13 +1,15 @@
 package net.torguet.xlsx.list;
 
+import com.google.gson.*;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 import net.torguet.cal.*;
 import net.torguet.xlsx.old.OldReader;
 import net.torguet.xlsx.stats.StatsWriter;
 import org.apache.poi.xssf.usermodel.*;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Files;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
@@ -59,6 +61,29 @@ public class ListWriter {
         workbook.write(out);
         out.close();
         System.out.println("workbook written successfully");
+    }
+
+    void generateAllLists(StatsWriter statsWriter) throws IOException {
+        Cours matcher = new Cours(null);
+        ICSGenerator generator = new ICSGenerator(calendrier);
+        for(String ens : statsWriter.getEnseignants()) {
+            if (ens.contains("/")) {
+                String[] split = ens.split("/");
+                for(String e : split) {
+                    if(!Files.exists(new File(e+".xlsx").toPath())) {
+                        matcher.setEnseignant(e);
+                        generate(new File(e + ".xlsx"), matcher, true, true, true);
+                        generator.generate(matcher, true, e + ".ics");
+                    }
+                }
+            } else {
+                matcher.setEnseignant(ens);
+                generate(new File(ens + ".xlsx"), matcher, true, true, true);
+                generator.generate(matcher, true, ens + ".ics");
+            }
+        }
+        generate(new File("all.xlsx"), null, true, true, true);
+        generator.generate(null, true, "all.ics");
     }
 
     private void generateCours(Cours cours, boolean joursSemaine) {
@@ -114,9 +139,24 @@ public class ListWriter {
 
 
     public static void main(String[] args)throws Exception {
-        OldReader oldReader;
+        OldReader oldReader = null;
+        Calendrier calendrier = null;
+                Gson gson = new GsonBuilder()
+                .registerTypeAdapter(ZonedDateTime.class, new TypeAdapter<ZonedDateTime>() {
+                    @Override
+                    public void write(JsonWriter out, ZonedDateTime value) throws IOException {
+                        out.value(value.toString());
+                    }
 
-        int level = 6;
+                    @Override
+                    public ZonedDateTime read(JsonReader in) throws IOException {
+                        return ZonedDateTime.parse(in.nextString());
+                    }
+                })
+                .enableComplexMapKeySerialization()
+                .create();
+
+        int level = 7;
         oldReader = switch (level) {
             case 3 -> // L3
                     new OldReader("EDT S5 STRI 1A L3 2024-2025.xlsx", 0);
@@ -124,19 +164,33 @@ public class ListWriter {
                     new OldReader("2024-2025 M1.xlsx", 0);
             // M2
             case 5 -> new OldReader("2024-2025 Master.xlsx", 1);
-            default -> new OldReader("2025-2026 Celcat.xlsx", 1);
+            // M2 Celcat
+            case 6 -> new OldReader("2025-2026 Celcat.xlsx", 1);
+            default -> null;
         };
 
+        if (oldReader == null) {
+            // re-read JSON file
+            FileReader fileReader = new FileReader("calendrier.json");
+            calendrier = gson.fromJson(fileReader, Calendrier.class);
+            fileReader.close();
+        } else {
+            calendrier = oldReader.traiterFichier();
+            oldReader.close();
+        }
 
-        Calendrier calendrier = oldReader.traiterFichier();
-
-        oldReader.close();
+        String json = gson.toJson(calendrier);
+        FileWriter fileWriter = new FileWriter("calendrier.json");
+        fileWriter.write(json);
+        fileWriter.close();
 
         StatsWriter statsWriter = new StatsWriter(calendrier);
 
         statsWriter.generate(new File("stats.xlsx"));
 
         ListWriter listWriter = new ListWriter(calendrier);
+
+        listWriter.generateAllLists(statsWriter);
 
         Scanner scanner = new Scanner(System.in);
 

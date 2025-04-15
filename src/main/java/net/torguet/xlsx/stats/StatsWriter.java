@@ -7,12 +7,14 @@ import org.apache.poi.xssf.usermodel.*;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 
 public class StatsWriter {
     XSSFWorkbook workbook;
     XSSFSheet spreadsheet;
     Calendrier calendrier;
     int currentRowNumber = 0;
+    ArrayList<String> enseignants = new ArrayList<>();
 
     public StatsWriter(Calendrier calendrier) {
         this.calendrier = calendrier;
@@ -37,6 +39,9 @@ public class StatsWriter {
         generateStatsDebut();
 
         for(String enseignant : heuresCours.keySet()) {
+            if (!enseignants.contains(enseignant)) {
+                enseignants.add(enseignant);
+            }
             float cours = heuresCours.get(enseignant);
             float td = 0;
             if (heuresTD.containsKey(enseignant))
@@ -54,6 +59,9 @@ public class StatsWriter {
         }
 
         for(String enseignant : heuresTD.keySet()) {
+            if (!enseignants.contains(enseignant)) {
+                enseignants.add(enseignant);
+            }
             if (!heuresCours.containsKey(enseignant)) {
                 float cours = 0;
                 float td = 0;
@@ -73,6 +81,9 @@ public class StatsWriter {
         }
 
         for(String enseignant : heuresTP.keySet()) {
+            if (!enseignants.contains(enseignant)) {
+                enseignants.add(enseignant);
+            }
             if (!heuresCours.containsKey(enseignant) && !heuresTD.containsKey(enseignant)) {
                 float cours = 0;
                 float td = 0;
@@ -90,6 +101,9 @@ public class StatsWriter {
         }
 
         for(String enseignant : heuresAutres.keySet()) {
+            if (!enseignants.contains(enseignant)) {
+                enseignants.add(enseignant);
+            }
             if (!heuresCours.containsKey(enseignant) && !heuresTD.containsKey(enseignant) && !heuresTP.containsKey(enseignant)) {
                 float cours = 0;
                 float td = 0;
@@ -201,4 +215,7 @@ public class StatsWriter {
 
     }
 
+    public ArrayList<String> getEnseignants() {
+        return enseignants;
+    }
 }

@@ -6,7 +6,10 @@ import net.fortuna.ical4j.model.component.VEvent;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.zone.ZoneRules;
 
 public class ICSGenerator {
     private final Calendrier calendar;
@@ -29,6 +32,17 @@ public class ICSGenerator {
             for(Jour jour : semaine.getJours()) {
                 if (jour == null)
                     continue;
+
+                // DST check
+                ZoneId z = ZoneId.of( "Europe/Paris" );
+                ZoneRules zoneRules = z.getRules();
+                boolean isDst = zoneRules.isDaylightSavings( jour.getDate().toInstant() );
+                boolean isDstNow = zoneRules.isDaylightSavings(Instant.now());
+
+                if (isDst) {
+                    System.out.println("Daylight savings for " + jour.getDate().toInstant());
+                }
+
                 for (Cours cours : jour.getCours()) {
                     if (cours == null)
                         continue;
@@ -36,6 +50,11 @@ public class ICSGenerator {
                         continue;
                     }
                     ZonedDateTime start = cours.getDebut();
+                    if (isDstNow && ! isDst) {
+                        start = start.minusHours(1);
+                    } else if (isDst && ! isDstNow) {
+                        start = start.plusHours(1);
+                    }
                     ZonedDateTime end = start.plusHours((long)cours.getDuree());
                     System.out.println(end);
 

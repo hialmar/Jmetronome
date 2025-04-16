@@ -84,6 +84,14 @@ public class ListWriter {
         }
         generate(new File("all.xlsx"), null, true, true, true);
         generator.generate(null, true, "all.ics");
+        Cours matcherGroupe = new Cours(null);
+        for(String groupe : statsWriter.getGroupes()) {
+            if (groupe == null)
+                continue;
+            matcherGroupe.setGroupe(groupe);
+            generate(new File("groupe"+groupe+".xlsx"), matcherGroupe, true, true, true);
+            generator.generate(matcherGroupe, true, "groupe"+groupe+".ics");
+        }
     }
 
     private void generateCours(Cours cours, boolean joursSemaine) {

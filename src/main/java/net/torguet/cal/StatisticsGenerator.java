@@ -1,5 +1,6 @@
 package net.torguet.cal;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class StatisticsGenerator {
@@ -9,6 +10,7 @@ public class StatisticsGenerator {
     private final HashMap<String, Float> heuresTP = new HashMap<>();
     private final HashMap<String, Float> heuresAutres = new HashMap<>();
     private final HashMap<String, Float> heuresControle = new HashMap<>();
+    private final ArrayList<String> groupes = new ArrayList<>();
 
     public StatisticsGenerator(Calendrier calendar) {
         this.calendar = calendar;
@@ -46,6 +48,9 @@ public class StatisticsGenerator {
                         continue;
                     if (!cours.match(matcher, matchAny)) {
                         continue;
+                    }
+                    if (!groupes.contains(cours.getGroupe())) {
+                        groupes.add(cours.getGroupe());
                     }
                     String enseignant = cours.getEnseignant();
                     if (enseignant == null) {
@@ -194,5 +199,9 @@ public class StatisticsGenerator {
                 System.out.println("Heures de contrôle "+heuresControle.get(enseignant));
             }
         }
+    }
+
+    public ArrayList<String> getGroupes() {
+        return groupes;
     }
 }

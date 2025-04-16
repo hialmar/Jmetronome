@@ -15,6 +15,7 @@ public class StatsWriter {
     Calendrier calendrier;
     int currentRowNumber = 0;
     ArrayList<String> enseignants = new ArrayList<>();
+    ArrayList<String> groupes;
 
     public StatsWriter(Calendrier calendrier) {
         this.calendrier = calendrier;
@@ -29,6 +30,7 @@ public class StatsWriter {
     public void generate(File file, Cours matcher, boolean matchAny) throws IOException {
         StatisticsGenerator statisticsGenerator = new StatisticsGenerator(calendrier);
         statisticsGenerator.generate(matcher, matchAny);
+        groupes = statisticsGenerator.getGroupes();
 
         var heuresCours = statisticsGenerator.getHeuresCours();
         var heuresTD = statisticsGenerator.getHeuresTD();
@@ -217,5 +219,9 @@ public class StatsWriter {
 
     public ArrayList<String> getEnseignants() {
         return enseignants;
+    }
+
+    public ArrayList<String> getGroupes() {
+        return groupes;
     }
 }

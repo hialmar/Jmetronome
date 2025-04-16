@@ -1,5 +1,10 @@
 package net.torguet.xlsx.old;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 import net.torguet.cal.Calendrier;
 import net.torguet.cal.Cours;
 import net.torguet.cal.Jour;
@@ -9,6 +14,7 @@ import org.apache.poi.xssf.usermodel.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
@@ -31,10 +37,12 @@ public class OldWriter {
     XSSFCellStyle bottomLeftStyle;
     XSSFCellStyle bottomRightStyle;
     XSSFCellStyle roomStyle;
+    XSSFCellStyle missingRoomStyle;
     XSSFCellStyle topBottomStyle;
     XSSFCellStyle leftStyle;
     XSSFCellStyle rightStyle;
     XSSFCellStyle simpleRoomStyle;
+    XSSFCellStyle simpleMissingRoomStyle;
 
     public OldWriter(Calendrier calendrier) {
         this.calendrier = calendrier;
@@ -69,6 +77,10 @@ public class OldWriter {
         roomStyle.setBorderBottom(BorderStyle.MEDIUM);
         roomStyle.setFillBackgroundColor(IndexedColors.BRIGHT_GREEN.getIndex());
         roomStyle.setFillPattern(FillPatternType.LESS_DOTS);
+        missingRoomStyle = workbook.createCellStyle();
+        missingRoomStyle.setBorderBottom(BorderStyle.MEDIUM);
+        missingRoomStyle.setFillBackgroundColor(IndexedColors.RED.getIndex());
+        missingRoomStyle.setFillPattern(FillPatternType.LESS_DOTS);
         topBottomStyle = workbook.createCellStyle();
         topBottomStyle.setBorderTop(BorderStyle.MEDIUM);
         topBottomStyle.setBorderBottom(BorderStyle.MEDIUM);
@@ -87,6 +99,11 @@ public class OldWriter {
         simpleRoomStyle.setBorderBottom(BorderStyle.MEDIUM);
         simpleRoomStyle.setFillBackgroundColor(IndexedColors.BRIGHT_GREEN.getIndex());
         simpleRoomStyle.setFillPattern(FillPatternType.LESS_DOTS);
+        simpleMissingRoomStyle = workbook.createCellStyle();
+        simpleMissingRoomStyle.setBorderTop(BorderStyle.MEDIUM);
+        simpleMissingRoomStyle.setBorderBottom(BorderStyle.MEDIUM);
+        simpleMissingRoomStyle.setFillBackgroundColor(IndexedColors.RED.getIndex());
+        simpleMissingRoomStyle.setFillPattern(FillPatternType.LESS_DOTS);
     }
 
     public void generate(File file) throws IOException {
@@ -130,7 +147,11 @@ public class OldWriter {
 
             XSSFCell salle = rowBas.createCell(cellSalle);
             salle.setCellValue(cours.getSalle());
-            salle.setCellStyle(roomStyle);
+            if (cours.getSalle() == null) {
+                salle.setCellStyle(missingRoomStyle);
+            } else {
+                salle.setCellStyle(roomStyle);
+            }
             XSSFCell salle2 = rowBas.createCell(cellSalle+1);
             salle2.setCellStyle(bottomRightStyle);
 
@@ -173,7 +194,11 @@ public class OldWriter {
             cellTop.setCellStyle(topBottomStyle);
         }
         XSSFCell salle = rowHaut.createCell(cellSalle);
-        salle.setCellStyle(simpleRoomStyle);
+        if (cours.getSalle() == null) {
+            salle.setCellStyle(simpleMissingRoomStyle);
+        } else {
+            salle.setCellStyle(simpleRoomStyle);
+        }
         salle.setCellValue(cours.getSalle());
         XSSFCell last = rowHaut.createCell(cellSalle+1);
         last.setCellStyle(rightStyle);
@@ -216,21 +241,45 @@ public class OldWriter {
 
 
     public static void main(String[] args)throws Exception {
-        OldReader oldReader;
+        OldReader oldReader = null;
+        Calendrier calendrier = null;
+        Gson gson = new GsonBuilder()
+                .registerTypeAdapter(ZonedDateTime.class, new TypeAdapter<ZonedDateTime>() {
+                    @Override
+                    public void write(JsonWriter out, ZonedDateTime value) throws IOException {
+                        out.value(value.toString());
+                    }
 
-        int level = 5;
+                    @Override
+                    public ZonedDateTime read(JsonReader in) throws IOException {
+                        return ZonedDateTime.parse(in.nextString());
+                    }
+                })
+                .enableComplexMapKeySerialization()
+                .create();
+
+        int level = 7;
         oldReader = switch (level) {
             case 3 -> // L3
                     new OldReader("EDT S5 STRI 1A L3 2024-2025.xlsx", 0);
             case 4 -> // M1
-                    new OldReader("2024-2025 M1.xlsx", 0); // M2
-            default -> new OldReader("2024-2025 Master.xlsx", 1);
+                    new OldReader("2024-2025 M1.xlsx", 0);
+            // M2
+            case 5 -> new OldReader("2024-2025 Master.xlsx", 1);
+            // M2 Celcat
+            case 6 -> new OldReader("2025-2026 Celcat.xlsx", 1);
+            default -> null;
         };
 
-        Calendrier calendrier = oldReader.traiterFichier();
-
-        oldReader.close();
-
+        if (oldReader == null) {
+            // re-read JSON file
+            FileReader fileReader = new FileReader("calendrier.json");
+            calendrier = gson.fromJson(fileReader, Calendrier.class);
+            fileReader.close();
+        } else {
+            calendrier = oldReader.traiterFichier();
+            oldReader.close();
+        }
 
         OldWriter oldWriter = new OldWriter(calendrier);
 

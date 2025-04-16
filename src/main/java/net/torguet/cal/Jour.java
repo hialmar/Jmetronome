@@ -20,7 +20,19 @@ public class Jour {
     }
 
     public void addCours(Cours cours) {
-        this.cours.add(cours);
+        // insertion dans l'ordre
+        boolean added = false;
+        for(int i=0; i<this.cours.size(); i++) {
+            Cours c = this.cours.get(i);
+            if (c.getDebut().compareTo(cours.getDebut()) > 0) {
+                added = true;
+                this.cours.add(i, cours);
+                break;
+            }
+        }
+        if (!added) {
+            this.cours.add(cours);
+        }
     }
 
     public ArrayList<Cours> getCoursAt(ZonedDateTime zonedDateTime) {

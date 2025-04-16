@@ -18,4 +18,14 @@ public class Semaine {
     public void addJour(Jour jour) {
         jours.add(jour);
     }
+
+    public boolean hasMatchingCours(Cours matcher, boolean matchAny) {
+        boolean found = false;
+        for(Jour j : this.jours) {
+            if (j.hasMatchingCours(matcher, matchAny)) {
+                found = true;
+            }
+        }
+        return found;
+    }
 }

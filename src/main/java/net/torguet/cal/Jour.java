@@ -44,4 +44,13 @@ public class Jour {
         }
         return coursArrayList;
     }
+
+    public boolean hasMatchingCours(Cours cours, boolean matchAny) {
+        boolean found = false;
+        for(Cours c : this.cours) {
+            if (c.match(cours, matchAny))
+                found = true;
+        }
+        return found;
+    }
 }

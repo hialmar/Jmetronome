@@ -45,10 +45,10 @@ public class ListWriter {
 
         for(var semaine : calendrier.getSemaines()) {
             if (numSemaines)
-                generateSemaineDebut(semaine);
+                generateSemaineDebut(semaine, matcher, matchAny);
             for (var jour : semaine.getJours()) {
                 if (joursSemaine)
-                    generateJourDebut(jour);
+                    generateJourDebut(jour, matcher, matchAny);
                 for (var cours : jour.getCours()) {
                     if (cours.match(matcher, matchAny)) {
                         generateCours(cours, joursSemaine);
@@ -124,7 +124,10 @@ public class ListWriter {
     }
 
 
-    private void generateJourDebut(Jour jour) {
+    private void generateJourDebut(Jour jour, Cours matcher, boolean matchAny) {
+        if (!jour.hasMatchingCours(matcher, matchAny)) {
+            return;
+        }
         XSSFRow row = spreadsheet.createRow(currentRowNumber++);
         ZonedDateTime date = jour.getDate();
         DayOfWeek dayOfWeek = date.getDayOfWeek();
@@ -135,7 +138,10 @@ public class ListWriter {
         cell.setCellValue(dayOfWeek.getDisplayName(TextStyle.FULL_STANDALONE, Locale.FRANCE));
     }
 
-    private void generateSemaineDebut(Semaine semaine) {
+    private void generateSemaineDebut(Semaine semaine, Cours matcher, boolean matchAny) {
+        if (!semaine.hasMatchingCours(matcher, matchAny)) {
+            return;
+        }
         XSSFRow row = spreadsheet.createRow(currentRowNumber++);
         int cellNumber = 0;
         XSSFCell cell = row.createCell(cellNumber++);
@@ -164,7 +170,7 @@ public class ListWriter {
                 .enableComplexMapKeySerialization()
                 .create();
 
-        int level = 6;
+        int level = 7;
         oldReader = switch (level) {
             case 3 -> // L3
                     new OldReader("EDT S5 STRI 1A L3 2024-2025.xlsx", 0);

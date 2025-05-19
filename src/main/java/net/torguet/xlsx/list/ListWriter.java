@@ -170,7 +170,7 @@ public class ListWriter {
                 .enableComplexMapKeySerialization()
                 .create();
 
-        int level = 7;
+        int level = 8;
         oldReader = switch (level) {
             case 3 -> // L3
                     new OldReader("EDT S5 STRI 1A L3 2024-2025.xlsx", 0);
@@ -180,6 +180,8 @@ public class ListWriter {
             case 5 -> new OldReader("2024-2025 Master.xlsx", 1);
             // M2 Celcat
             case 6 -> new OldReader("2025-2026 Celcat.xlsx", 1);
+            // M2 2025-2026
+            case 7 -> new OldReader("2025-2026 M2.xlsx", 1);
             default -> null;
         };
 

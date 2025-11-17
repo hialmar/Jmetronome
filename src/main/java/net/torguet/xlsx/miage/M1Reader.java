@@ -92,7 +92,7 @@ public class M1Reader {
             var value = cell.getStringCellValue();
             if (value != null && value.startsWith("TD")) {
                 System.out.println("Groupe "+value);
-                debutTD[idxTD] = rowNumber - debutCoursLundi;
+                debutTD[idxTD] = rowNumber - debutCoursLundi - 1;
                 groupeTDNames[idxTD] = value;
                 nbGroupesTD++;
                 idxTD++;
@@ -118,7 +118,7 @@ public class M1Reader {
                 if (nbGroupesTP>0 && value.equalsIgnoreCase(groupeTPNames[0])) {
                     break;
                 }
-                debutTP[idxTD] = rowNumber - debutCoursLundi;
+                debutTP[idxTD] = rowNumber - debutCoursLundi - 1;
                 groupeTPNames[idxTD] = value;
                 nbGroupesTP++;
                 idxTD++;
@@ -165,7 +165,7 @@ public class M1Reader {
                         minute = Integer.parseInt(value.substring(idxH+1));
                     }
                     debutCoursHoraires[debutCoursIdx] = heure*100+minute;
-                    System.out.println(debutCours[debutCoursIdx]);
+                    System.out.println(debutCours[debutCoursIdx]+"->"+debutCoursHoraires[debutCoursIdx]);
                     debutCoursIdx++;
                     rowNumber++;
                     cell = sauteCaseVide();
@@ -239,13 +239,13 @@ public class M1Reader {
             int nbJour = 0;
             rowNumber = debutCoursLundi;
             while (rowNumber < sheet.getPhysicalNumberOfRows()) {
-                date = date.plusDays(1);
                 System.out.println(date);
                 Jour jour = recupJour(nbJour);
                 if (jour != null) {
                     semaine.addJour(jour);
                 }
                 nbJour++;
+                date = date.plusDays(1);
                 if(nbJour>=5) {
                     break;
                 }
@@ -264,7 +264,9 @@ public class M1Reader {
         int nbCours = 0;
         for(int coursIdx = 0; coursIdx <nbDebutCours ; coursIdx++) {
             // créneau Cours ou TD1 ou TP1
-            var cell = sheet.getRow(rowNumber+debutCours[coursIdx]).getCell(colNumber);
+            int row = rowNumber+debutCours[coursIdx];
+            System.out.println("Cours Ligne :"+row);
+            var cell = sheet.getRow(row).getCell(colNumber);
             if (cell != null && cell.getCellType() == STRING) {
                 Cours cours = recupCours(cell);
                 if (cours != null) {
@@ -292,7 +294,9 @@ public class M1Reader {
 
     private int recupTDTP(Jour jour, int nbCours, int coursIdx, int idx, int[] debut) {
         XSSFCell cell;
-        cell = sheet.getRow(rowNumber+debutCours[coursIdx]+debut[idx]).getCell(colNumber);
+        int row = rowNumber+debutCours[coursIdx]+debut[idx];
+        System.out.println("TD/TP Ligne :"+row);
+        cell = sheet.getRow(row).getCell(colNumber);
         if (cell != null && cell.getCellType() == STRING) {
             Cours cours = recupCours(cell);
             if (cours != null) {

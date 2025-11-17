@@ -195,7 +195,7 @@ public class Cours {
                 (type == TypeCours.TYPE_IRT ? "L3 IRT " : "") +
                 (type == TypeCours.TYPE_ALTERNANCE ? "ALT " : "") +
                 intitule +
-                (codeApogee != null ? ", code : " + codeApogee : "") +
+                // (codeApogee != null ? ", code : " + codeApogee : "") +
                 (enseignant != null ? ", ens : " + enseignant : "") +
                 (groupe != null ? ", grp : " + groupe : "") +
                 (salle != null ? ", salle : " + salle : "");

@@ -210,6 +210,8 @@ public class ListWriter {
 
         listWriter.generateAllLists(statsWriter);
 
+        ICSGenerator icsGenerator = new ICSGenerator(calendrier);
+
         Scanner scanner = new Scanner(System.in);
 
         Cours matcher = new Cours(null);
@@ -286,6 +288,7 @@ public class ListWriter {
             }
             System.out.println("Matcher " + matcher);
             listWriter.generate(new File("Liste"+i+".xlsx"), all?null:matcher, matchAny, numSemaines, joursSemaine);
+            icsGenerator.generate(matcher, matchAny, "Liste"+i+".ics");
             i++;
         }
 

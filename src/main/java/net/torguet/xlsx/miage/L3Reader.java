@@ -30,7 +30,7 @@ public class L3Reader extends M1Reader {
 
         String value = cell.getStringCellValue();
 
-        String [] split = value.trim().split("[-\\n]");
+        String [] split = value.strip().split("[-\\n]");
         // remove empty strings
         List<String> list = new ArrayList<>(Arrays.asList(split));
         list.removeIf(item -> item == null || item.isEmpty());

@@ -26,9 +26,9 @@ public class M1Reader {
     private Row[] rows;
 
     private int debutCoursLundi = -1;
-    private final int[] debutCours = new int[6];
+    final int[] debutCours = new int[6];
     private final int[] debutCoursHoraires = new int[6];
-    private int nbDebutCours = 0;
+    int nbDebutCours = 0;
     private final int[] debutTD = new int[6];
     private final String[] groupeTDNames = new String[6];
     private final int[] debutTP = new int[6];
@@ -39,7 +39,7 @@ public class M1Reader {
     private ZonedDateTime date;
     private Semaine semaine;
 
-    private int rowNumber;
+    int rowNumber;
     private int colNumber;
     private int jourSemaine;
 
@@ -133,7 +133,7 @@ public class M1Reader {
 
     private static final String [] joursSemaine = {"LUNDI", "MAR", "MER", "JEU", "VEN"};
 
-    private static final String timeMatcher = "^([0-9]+)h([0-9]*)";
+    static final String timeMatcher = "^([0-9]+)h([0-9]*)";
 
     private void calculInfoHoraires() {
         colNumber = 0;
@@ -171,7 +171,7 @@ public class M1Reader {
         }
     }
 
-    private static HeureMinute getHeureMinute(String value) {
+    static HeureMinute getHeureMinute(String value) {
         int idxH = value.indexOf("h");
         int heure = 0;
         int minute = 0;
@@ -184,7 +184,7 @@ public class M1Reader {
         return new HeureMinute(heure, minute);
     }
 
-    private record HeureMinute(int heure, int minute) {
+    record HeureMinute(int heure, int minute) {
     }
 
     private void chercheJourSemaine(int idJour) {
@@ -316,7 +316,7 @@ public class M1Reader {
         return nbCours;
     }
 
-    private Cours recupCours(XSSFCell cell) {
+    Cours recupCours(XSSFCell cell) {
         Cours cours;
         System.out.println("recupCours");
 
@@ -394,26 +394,29 @@ public class M1Reader {
         return cours;
     }
 
-    private static void setTypeCours(String split, Cours cours) {
+    void setTypeCours(String split, Cours cours) {
         split = split.trim();
-        switch (split) {
-            case "Cours":
+        switch (split.toLowerCase()) {
+            case "cours":
                 cours.setType(TypeCours.TYPE_COURS);
                 break;
-            case "TD":
-            case "TD1":
-            case "TD2":
-            case "Groupe A":
-            case "Groupe B":
-            case "Groupe A :":
-            case "Groupe B :":
+            case "td":
+            case "td1":
+            case "td2":
+            case "groupe a":
+            case "groupe b":
+            case "groupe a :":
+            case "groupe b :":
                 cours.setType(TypeCours.TYPE_TD);
                 break;
-            case "TP":
+            case "tp":
+            case "tp1":
+            case "tp2":
+            case "tp3":
                 cours.setType(TypeCours.TYPE_TP);
                 break;
-            case "EXAMEN":
             case "examen":
+            case "remise projet":
                 cours.setType(TypeCours.TYPE_CONTROLE);
                 break;
             default:
@@ -421,7 +424,7 @@ public class M1Reader {
         }
     }
 
-    private void setHoraireEtGroupeCours(int debutC, Cours cours, int decalage) {
+    protected void setHoraireEtGroupeCours(int debutC, Cours cours, int decalage) {
         System.out.println(debutCoursHoraires[debutC]);
         ZonedDateTime dateCours = date.plusHours(debutCoursHoraires[debutC]/100);
         dateCours = dateCours.plusMinutes(debutCoursHoraires[debutC]%100);
@@ -481,7 +484,10 @@ public class M1Reader {
                 .enableComplexMapKeySerialization()
                 .create();
 
-        reader = new M1Reader("24-25EDT S8 M1 MIAGE-propo- 1.xlsx", 0);
+        // reader = new M1Reader("24-25EDT S8 M1 MIAGE-propo- 1.xlsx", 0);
+        reader = new M1Reader("25-26-M1 MIAGE-S.8 en construction 1.xlsx", 0);
+
+
 
         Calendrier calendrier;
 
@@ -574,9 +580,9 @@ public class M1Reader {
             }
             System.out.println("Matcher " + matcher);
 
-            //ICSGenerator generator = new ICSGenerator(calendrier);
+            ICSGenerator generator = new ICSGenerator(calendrier);
 
-            //generator.generate(matcher, matchAny, "cal"+i+".ics");
+            generator.generate(matcher, matchAny, "cal"+i+".ics");
 
             ListWriter listWriter = new ListWriter(calendrier);
 
